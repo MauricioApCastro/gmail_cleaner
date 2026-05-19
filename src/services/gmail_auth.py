@@ -17,6 +17,9 @@ def get_gmail_credentials() -> Credentials:
             GMAIL_SCOPES,
         )
 
+    if credentials and not credentials.has_scopes(GMAIL_SCOPES):
+        credentials = None
+
     if credentials and credentials.valid:
         return credentials
 

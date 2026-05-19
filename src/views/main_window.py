@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
+    QHBoxLayout,
     QLabel,
-    QListWidget,
-    QListWidgetItem,
+    QLineEdit,
     QMainWindow,
+    QMessageBox,
     QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
-
-from src.services.gmail_service import pegar_assunto, pegar_data, pegar_remetente
 
 
 class MainWindow(QMainWindow):
@@ -29,17 +30,35 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("Status: desconectado")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.load_emails_button = QPushButton("Carregar e-mails")
-        self.load_emails_button.setEnabled(False)
+        self.sender_input = QLineEdit()
+        self.sender_input.setPlaceholderText("Digite o remetente")
 
-        self.email_list = QListWidget()
+        self.search_button = QPushButton("Buscar")
+        self.search_button.setEnabled(False)
+
+        self.trash_button = QPushButton("Mover para lixeira")
+        self.trash_button.setEnabled(False)
+
+        self.result_table = QTableWidget(1, 2)
+        self.result_table.setHorizontalHeaderLabels(["Remetente", "Quantidade"])
+        self.result_table.verticalHeader().setVisible(False)
+        self.result_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.result_table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        self.result_table.setItem(0, 0, QTableWidgetItem("-"))
+        self.result_table.setItem(0, 1, QTableWidgetItem("0"))
+        self.result_table.horizontalHeader().setStretchLastSection(True)
+
+        form_layout = QHBoxLayout()
+        form_layout.addWidget(self.sender_input)
+        form_layout.addWidget(self.search_button)
 
         layout = QVBoxLayout()
         layout.addWidget(self.title_label)
         layout.addWidget(self.connect_button)
         layout.addWidget(self.status_label)
-        layout.addWidget(self.load_emails_button)
-        layout.addWidget(self.email_list)
+        layout.addLayout(form_layout)
+        layout.addWidget(self.result_table)
+        layout.addWidget(self.trash_button)
 
         container = QWidget()
         container.setLayout(layout)
@@ -73,13 +92,23 @@ class MainWindow(QMainWindow):
                 background: #8c959f;
             }
 
+            QLineEdit {
+                background: white;
+                border: 1px solid #d0d7de;
+                border-radius: 6px;
+                color: #24292f;
+                font-size: 14px;
+                min-height: 36px;
+                padding: 0 10px;
+            }
+
             QLabel {
                 color: #57606a;
                 font-size: 14px;
                 padding: 8px 0;
             }
 
-            QListWidget {
+            QTableWidget {
                 background: white;
                 border: 1px solid #d0d7de;
                 border-radius: 6px;
@@ -93,17 +122,32 @@ class MainWindow(QMainWindow):
     def set_status(self, message: str) -> None:
         self.status_label.setText(f"Status: {message}")
 
-    def set_buttons_enabled(self, connect: bool, load: bool) -> None:
+    def set_buttons_enabled(
+        self,
+        connect: bool,
+        search: bool,
+        trash: bool = False,
+    ) -> None:
         self.connect_button.setEnabled(connect)
-        self.load_emails_button.setEnabled(load)
+        self.search_button.setEnabled(search)
+        self.trash_button.setEnabled(trash)
 
-    def show_emails(self, emails) -> None:
-        self.email_list.clear()
+    def get_sender(self) -> str:
+        return self.sender_input.text().strip()
 
-        for email in emails:
-            item_text = (
-                f"{pegar_assunto(email)}\n"
-                f"De: {pegar_remetente(email)}\n"
-                f"Data: {pegar_data(email)}"
-            )
-            self.email_list.addItem(QListWidgetItem(item_text))
+    def show_result(self, remetente: str, quantidade: int) -> None:
+        self.result_table.setItem(0, 0, QTableWidgetItem(remetente))
+        self.result_table.setItem(0, 1, QTableWidgetItem(str(quantidade)))
+
+    def reset_result(self) -> None:
+        self.show_result("-", 0)
+
+    def confirm_move_to_trash(self, quantidade: int) -> bool:
+        resposta = QMessageBox.question(
+            self,
+            "Confirmar envio para lixeira",
+            f"Mover {quantidade} e-mail(s) para a lixeira?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        return resposta == QMessageBox.StandardButton.Yes
