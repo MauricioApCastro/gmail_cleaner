@@ -37,11 +37,10 @@ Na primeira execucao, o navegador abre para login e consentimento do Gmail. Se e
 
 Ao executar, o script mostra:
 
-- O email autenticado.
-- O total de mensagens.
-- Os primeiros emails da caixa de entrada.
-- Remetentes repetidos no lote analisado.
-- Emails antigos no lote analisado.
+- A tela inicial do Gmail Cleaner.
+- O botao para conectar ao Gmail.
+- O status da conexao.
+- O botao para carregar emails.
 
 O servico principal de leitura fica em `src/services/gmail_service.py` e expoe funcoes para listar emails, pegar assunto, remetente, data e quantidade total.
 
