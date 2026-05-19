@@ -11,10 +11,12 @@ EMAIL_PREVIEW_LIMIT = 10
 EMAIL_ANALYSIS_LIMIT = 100
 OLD_EMAIL_DAYS = 365
 REPEATED_SENDER_MIN_COUNT = 2
+APP_NAME = "Gmail Cleaner"
 
 
 def main() -> None:
     _configure_stdout()
+    print(f"{APP_NAME}\n")
 
     try:
         service = get_gmail_service()

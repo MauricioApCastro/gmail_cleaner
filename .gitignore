@@ -22,6 +22,8 @@ token.json
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
 # OS files
 .DS_Store
