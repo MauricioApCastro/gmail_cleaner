@@ -4,7 +4,14 @@ import sys
 
 from src.services.gmail_auth import get_gmail_service
 from src.services.gmail_filters import find_old_emails, find_repeated_senders
-from src.services.gmail_messages import list_email_previews
+from src.services.gmail_service import (
+    listar_emails,
+    pegar_assunto,
+    pegar_data,
+    pegar_email_logado,
+    pegar_remetente,
+    quantidade_total,
+)
 
 
 EMAIL_PREVIEW_LIMIT = 10
@@ -24,27 +31,25 @@ def main() -> None:
         print(error)
         return
 
-    profile = service.users().getProfile(userId="me").execute()
-
-    email_address = profile.get("emailAddress", "conta desconhecida")
-    total_messages = profile.get("messagesTotal", 0)
+    email_address = pegar_email_logado(service)
+    total_messages = quantidade_total(service)
 
     print(f"Login realizado com sucesso: {email_address}")
     print(f"Total de mensagens na conta: {total_messages}")
 
-    emails = list_email_previews(service, max_results=EMAIL_PREVIEW_LIMIT)
+    emails = listar_emails(service, limite=EMAIL_PREVIEW_LIMIT)
     if not emails:
         print("Nenhum email encontrado na caixa de entrada.")
         return
 
     print(f"\nPrimeiros {len(emails)} emails da caixa de entrada:\n")
     for index, email in enumerate(emails, start=1):
-        print(f"{index}. {email.subject}")
-        print(f"   De: {email.sender}")
-        print(f"   Data: {email.date}")
+        print(f"{index}. {pegar_assunto(email)}")
+        print(f"   De: {pegar_remetente(email)}")
+        print(f"   Data: {pegar_data(email)}")
         print(f"   Preview: {email.snippet}\n")
 
-    analysis_emails = list_email_previews(service, max_results=EMAIL_ANALYSIS_LIMIT)
+    analysis_emails = listar_emails(service, limite=EMAIL_ANALYSIS_LIMIT)
     repeated_senders = find_repeated_senders(
         analysis_emails,
         min_count=REPEATED_SENDER_MIN_COUNT,

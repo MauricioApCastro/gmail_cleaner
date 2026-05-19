@@ -43,6 +43,8 @@ Ao executar, o script mostra:
 - Remetentes repetidos no lote analisado.
 - Emails antigos no lote analisado.
 
+O servico principal de leitura fica em `src/services/gmail_service.py` e expoe funcoes para listar emails, pegar assunto, remetente, data e quantidade total.
+
 ## Seguranca
 
 Os arquivos em `credentials/` sao ignorados pelo Git para evitar vazamento de credenciais e tokens.
