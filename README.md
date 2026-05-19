@@ -35,7 +35,13 @@ python run.py
 
 Na primeira execucao, o navegador abre para login e consentimento do Gmail. Se ele nao abrir automaticamente, copie o link mostrado no terminal e abra no navegador. Depois disso, o token local fica salvo em `credentials/token.json`.
 
-Ao executar, o script mostra o email autenticado, o total de mensagens e os primeiros emails da caixa de entrada.
+Ao executar, o script mostra:
+
+- O email autenticado.
+- O total de mensagens.
+- Os primeiros emails da caixa de entrada.
+- Remetentes repetidos no lote analisado.
+- Emails antigos no lote analisado.
 
 ## Seguranca
 
