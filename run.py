@@ -1,3 +1,5 @@
+"""Command-line entry point for Gmail Cleaner."""
+
 import sys
 
 from src.services.gmail_auth import get_gmail_service
