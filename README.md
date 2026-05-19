@@ -1,6 +1,6 @@
 # Gmail Cleaner
 
-Projeto em Python para autenticar com Gmail e preparar rotinas de limpeza de emails.
+Projeto em Python para autenticar com Gmail, listar emails e preparar rotinas de limpeza.
 
 ## Setup
 
@@ -34,6 +34,8 @@ python run.py
 ```
 
 Na primeira execucao, o navegador abre para login e consentimento do Gmail. Se ele nao abrir automaticamente, copie o link mostrado no terminal e abra no navegador. Depois disso, o token local fica salvo em `credentials/token.json`.
+
+Ao executar, o script mostra o email autenticado, o total de mensagens e os primeiros emails da caixa de entrada.
 
 ## Seguranca
 
