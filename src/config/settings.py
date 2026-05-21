@@ -8,6 +8,8 @@ SRC_DIR = BASE_DIR / "src"
 DATA_DIR = SRC_DIR / "data"
 LOGS_DIR = SRC_DIR / "logs"
 THEMES_DIR = SRC_DIR / "assets" / "themes"
+LOGO_FILE = SRC_DIR / "assets" / "logo" / "logo.png"
+ICON_FILE = SRC_DIR / "assets" / "logo" / "app_icon.ico"
 CLEANUP_LOG_FILE = DATA_DIR / "history" / "cleanup_history.jsonl"
 
 GMAIL_SCOPES = [

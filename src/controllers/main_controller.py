@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections import Counter
-
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication
 
@@ -328,7 +326,10 @@ class MainController(QObject):
             if email.message_id not in set(self.cleanable_message_ids)
         ]
         self.cleanable_message_ids = []
-        self._apply_exceptions_and_render(self.window.get_sender())
+        if self.ranking_mode:
+            self._remove_current_sender_from_ranking()
+        else:
+            self._apply_exceptions_and_render(self.window.get_sender())
         self.window.show_loading(False)
         self.window.set_status(
             f"Limpeza finalizada: {moved_count} e-mail(s) movido(s) para a lixeira.",
@@ -341,6 +342,29 @@ class MainController(QObject):
             trash=bool(self.cleanable_message_ids),
             next_sender=self._has_next_sender(),
         )
+
+    def _remove_current_sender_from_ranking(self) -> None:
+        if not self.sender_ranking:
+            self.window.show_result_rows([])
+            return
+
+        del self.sender_ranking[self.current_sender_index]
+        self.current_emails = []
+        self.cleanable_message_ids = []
+        self.protected_count = 0
+
+        if not self.sender_ranking:
+            self.current_sender_index = 0
+            self.ranking_mode = False
+            self.window.set_sender("")
+            self.window.show_result_rows([])
+            self.window.show_protected_rows([])
+            return
+
+        if self.current_sender_index >= len(self.sender_ranking):
+            self.current_sender_index = len(self.sender_ranking) - 1
+
+        self._show_current_sender()
 
     def _apply_exceptions_and_render(self, remetente: str) -> None:
         settings = self.window.get_exception_settings()
@@ -497,7 +521,6 @@ def _result_rows(
     if not all_emails:
         return []
 
-    protected_reason = _most_common_reason(protected_rows)
     protected_count = len(protected_rows)
     cleanable_count = len(cleanable)
     with_attachment = sum(1 for email in all_emails if email.has_attachment)
@@ -516,16 +539,12 @@ def _result_rows(
             "selected": bool(cleanable_count),
             "sender": remetente or all_emails[0].sender,
             "total": len(all_emails),
-            "without_attachment": sum(
-                1 for email in all_emails if not email.has_attachment
-            ),
+            "cleanable_count": cleanable_count,
             "protected_count": protected_count,
             "estimated_space": _format_size(
                 sum(email.size_estimate for email in cleanable)
             ),
             "status": status,
-            "protection_reason": protected_reason,
-            "action": "Selecionar | Proteger | Pre-visualizar | Limpar",
         }
     ]
 
@@ -538,14 +557,6 @@ def _protected_row(email: EmailAnalysis, reason: str) -> dict[str, object]:
         "date": email.received_at.date().isoformat() if email.received_at else "-",
         "size": _format_size(email.size_estimate),
     }
-
-
-def _most_common_reason(rows: list[dict[str, object]]) -> str:
-    if not rows:
-        return ""
-
-    counts = Counter(str(row["reason"]) for row in rows)
-    return counts.most_common(1)[0][0]
 
 
 def _format_size(size_bytes: int) -> str:
