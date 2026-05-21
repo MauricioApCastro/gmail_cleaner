@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.services.gmail_messages import EmailPreview, list_email_previews
+from src.services.email_service import EmailPreview, list_email_previews
 
 
 def listar_emails(

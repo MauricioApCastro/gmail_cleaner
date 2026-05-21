@@ -6,6 +6,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from src.config.settings import CLIENT_SECRET_FILE, GMAIL_SCOPES, TOKEN_FILE
+from src.auth.token_manager import remove_local_token
 
 
 def get_gmail_credentials() -> Credentials:

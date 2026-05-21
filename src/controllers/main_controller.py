@@ -5,8 +5,11 @@ from collections import Counter
 from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QApplication
 
+from src.auth.oauth import get_gmail_service
+from src.auth.token_manager import remove_local_token
+from src.services.history_service import write_cleanup_log
 from src.services.exception_rules import apply_exception_rules
-from src.services.gmail_actions import (
+from src.services.cleanup_service import (
     EmailAnalysis,
     buscar_emails_por_remetente,
     listar_remetentes_por_volume,
@@ -30,6 +33,7 @@ class MainController(QObject):
         self.cleanable_message_ids: list[str] = []
         self.protected_count = 0
         self.ranking_mode = False
+        self.account_email = ""
 
         self.window.connect_button.clicked.connect(self.toggle_gmail_connection)
         self.window.search_button.clicked.connect(self.search_sender)
@@ -43,11 +47,9 @@ class MainController(QObject):
         if self.gmail_service is None:
             self.connect_gmail()
         else:
-            self.disconnect_gmail()
+            self.disconnect_gmail(remove_token=True)
 
     def connect_gmail(self) -> None:
-        from src.services.gmail_auth import get_gmail_service
-
         self.window.set_status("Conectando ao Gmail...", "searching")
         self.window.show_loading(True)
         self.window.set_buttons_enabled(connect=False, search=False, rank=False)
@@ -56,6 +58,7 @@ class MainController(QObject):
         try:
             self.gmail_service = get_gmail_service()
             email_address = pegar_email_logado(self.gmail_service)
+            self.account_email = email_address
             self.total_messages = quantidade_total(self.gmail_service)
         except FileNotFoundError as error:
             self._clear_state()
@@ -97,13 +100,22 @@ class MainController(QObject):
         self.window.set_connected_state(True)
         self.window.set_buttons_enabled(connect=True, search=True, rank=True)
 
-    def disconnect_gmail(self) -> None:
+    def disconnect_gmail(self, remove_token: bool = False) -> None:
+        removed = remove_local_token() if remove_token else False
         self._clear_state()
         self.window.show_loading(False)
         self.window.reset_result()
         self.window.set_sender("")
         self.window.set_connected_state(False)
-        self.window.set_status("Conta desconectada.", "offline")
+        if remove_token:
+            message = (
+                "Conta desconectada e token local removido."
+                if removed
+                else "Conta desconectada. Nenhum token local encontrado."
+            )
+        else:
+            message = "Conta desconectada."
+        self.window.set_status(message, "offline")
         self.window.set_buttons_enabled(connect=True, search=False, rank=False)
         self.window.navigate_to_page(0)
 
@@ -160,11 +172,15 @@ class MainController(QObject):
 
     def find_sender_ranking(self) -> None:
         if self.gmail_service is None:
-            self.window.set_status("Conecte ao Gmail antes de buscar o ranking.", "offline")
+            self.window.set_status(
+                "Conecte ao Gmail antes de buscar o ranking.", "offline"
+            )
             return
 
         if not self.sender_ranking:
-            self.window.set_status("Carregando remetentes com mais e-mails...", "searching")
+            self.window.set_status(
+                "Carregando remetentes com mais e-mails...", "searching"
+            )
             self.window.show_loading(True)
             self.window.set_buttons_enabled(connect=False, search=False, rank=False)
             QApplication.processEvents()
@@ -264,7 +280,9 @@ class MainController(QObject):
             self.window.set_status("Operacao cancelada.", "idle")
             return
 
-        self.window.set_status("Movendo e-mails selecionados para a lixeira...", "searching")
+        self.window.set_status(
+            "Movendo e-mails selecionados para a lixeira...", "searching"
+        )
         self.window.show_loading(True)
         self.window.set_buttons_enabled(
             connect=False,
@@ -274,11 +292,23 @@ class MainController(QObject):
         )
         QApplication.processEvents()
 
+        moved_emails = [
+            email
+            for email in self.current_emails
+            if email.message_id in set(self.cleanable_message_ids)
+        ]
+
         try:
             moved_count = mover_emails_para_lixeira(
                 self.gmail_service,
                 self.cleanable_message_ids,
                 self._update_trash_progress,
+            )
+            write_cleanup_log(
+                account_email=self.account_email,
+                sender_query=self.window.get_sender(),
+                moved_emails=moved_emails,
+                protected_count=self.protected_count,
             )
         except Exception as error:
             self.window.show_loading(False)
@@ -316,18 +346,14 @@ class MainController(QObject):
         settings = self.window.get_exception_settings()
         protections = apply_exception_rules(self.current_emails, settings)
         protection_by_id = {
-            protection.message_id: protection
-            for protection in protections
+            protection.message_id: protection for protection in protections
         }
 
-        # Final safety guard: attachments are never cleaned, even if the option is disabled.
         cleanable = []
         protected_rows = []
         for email in self.current_emails:
             protection = protection_by_id[email.message_id]
             reason = protection.reason
-            if email.has_attachment and not reason:
-                reason = "Possui anexo"
 
             if reason:
                 protected_rows.append(_protected_row(email, reason))
@@ -398,32 +424,47 @@ class MainController(QObject):
         self.current_emails = []
         self.cleanable_message_ids = []
         self.protected_count = 0
+        self.account_email = ""
 
     def _update_search_progress(self, current: int, total: int) -> None:
         if total == 0:
             self.window.set_status("Nenhum e-mail encontrado para ler.", "searching")
         elif current == 0:
-            self.window.set_status(f"Preparando analise de {total} e-mail(s)...", "searching")
+            self.window.set_status(
+                f"Preparando analise de {total} e-mail(s)...", "searching"
+            )
         else:
-            self.window.set_status(f"Analisando e-mail {current} de {total}...", "searching")
+            self.window.set_status(
+                f"Analisando e-mail {current} de {total}...", "searching"
+            )
         self.window.show_progress(current, total)
         QApplication.processEvents()
 
     def _update_sender_ranking_progress(self, current: int, total: int) -> None:
         if total == 0:
-            self.window.set_status("Nenhum e-mail encontrado para ranquear.", "searching")
+            self.window.set_status(
+                "Nenhum e-mail encontrado para ranquear.", "searching"
+            )
         elif current == 0:
-            self.window.set_status(f"Preparando resumo de {total} e-mail(s)...", "searching")
+            self.window.set_status(
+                f"Preparando resumo de {total} e-mail(s)...", "searching"
+            )
         else:
-            self.window.set_status(f"Analisando remetente {current} de {total}...", "searching")
+            self.window.set_status(
+                f"Analisando remetente {current} de {total}...", "searching"
+            )
         self.window.show_progress(current, total)
         QApplication.processEvents()
 
     def _update_trash_progress(self, current: int, total: int) -> None:
         if current == 0:
-            self.window.set_status(f"Preparando limpeza de {total} e-mail(s)...", "searching")
+            self.window.set_status(
+                f"Preparando limpeza de {total} e-mail(s)...", "searching"
+            )
         else:
-            self.window.set_status(f"Limpando e-mail {current} de {total}...", "searching")
+            self.window.set_status(
+                f"Limpando e-mail {current} de {total}...", "searching"
+            )
         self.window.show_progress(current, total)
         QApplication.processEvents()
 
@@ -441,7 +482,9 @@ def _summary(
         "cleanable": len(cleanable),
         "protected": protected_count,
         "unique_senders": unique_senders,
-        "estimated_space": _format_size(sum(email.size_estimate for email in cleanable)),
+        "estimated_space": _format_size(
+            sum(email.size_estimate for email in cleanable)
+        ),
     }
 
 
@@ -460,7 +503,9 @@ def _result_rows(
     with_attachment = sum(1 for email in all_emails if email.has_attachment)
     status = "Seguro apagar"
     if protected_count and cleanable_count:
-        status = "Atencao: possui anexos" if with_attachment else "Selecionado para limpeza"
+        status = (
+            "Atencao: possui anexos" if with_attachment else "Selecionado para limpeza"
+        )
     elif protected_count and not cleanable_count:
         status = "Protegido"
     elif cleanable_count:
@@ -471,9 +516,13 @@ def _result_rows(
             "selected": bool(cleanable_count),
             "sender": remetente or all_emails[0].sender,
             "total": len(all_emails),
-            "without_attachment": sum(1 for email in all_emails if not email.has_attachment),
+            "without_attachment": sum(
+                1 for email in all_emails if not email.has_attachment
+            ),
             "protected_count": protected_count,
-            "estimated_space": _format_size(sum(email.size_estimate for email in cleanable)),
+            "estimated_space": _format_size(
+                sum(email.size_estimate for email in cleanable)
+            ),
             "status": status,
             "protection_reason": protected_reason,
             "action": "Selecionar | Proteger | Pre-visualizar | Limpar",

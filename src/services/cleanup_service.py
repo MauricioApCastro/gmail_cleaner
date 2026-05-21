@@ -7,7 +7,6 @@ from datetime import UTC, datetime
 from email.utils import parseaddr
 from base64 import urlsafe_b64decode
 
-
 ProgressCallback = Callable[[int, int], None]
 
 
@@ -65,9 +64,7 @@ def listar_remetentes_por_volume(
             request_params["pageToken"] = page_token
 
         response = service.users().messages().list(**request_params).execute()
-        message_ids.extend(
-            message["id"] for message in response.get("messages", [])
-        )
+        message_ids.extend(message["id"] for message in response.get("messages", []))
 
         page_token = response.get("nextPageToken")
         if not page_token:
@@ -132,15 +129,9 @@ def buscar_emails_por_remetente(
         if page_token:
             request_params["pageToken"] = page_token
 
-        request = (
-            service.users()
-            .messages()
-            .list(**request_params)
-        )
+        request = service.users().messages().list(**request_params)
         response = request.execute()
-        message_ids.extend(
-            message["id"] for message in response.get("messages", [])
-        )
+        message_ids.extend(message["id"] for message in response.get("messages", []))
         print(f"Encontrados ate agora: {len(message_ids)}")
 
         page_token = response.get("nextPageToken")
@@ -262,7 +253,4 @@ def _payload_tem_anexo(payload: dict) -> bool:
     if filename:
         return True
 
-    return any(
-        _payload_tem_anexo(part)
-        for part in payload.get("parts", [])
-    )
+    return any(_payload_tem_anexo(part) for part in payload.get("parts", []))

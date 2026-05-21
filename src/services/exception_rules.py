@@ -22,7 +22,9 @@ class EmailProtection:
     reason: str = ""
 
 
-def apply_exception_rules(emails: list, settings: ExceptionSettings) -> list[EmailProtection]:
+def apply_exception_rules(
+    emails: list, settings: ExceptionSettings
+) -> list[EmailProtection]:
     return [get_protection(email, settings) for email in emails]
 
 

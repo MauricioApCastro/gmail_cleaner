@@ -17,6 +17,15 @@ credentials/*
 !credentials/.gitkeep
 token.json
 *.secret.json
+logs/
+src/data/accounts/*
+src/data/exceptions/*
+src/data/history/*
+src/data/cache/*
+!src/data/accounts/.gitkeep
+!src/data/exceptions/.gitkeep
+!src/data/history/.gitkeep
+!src/data/cache/.gitkeep
 
 # Tool caches
 .pytest_cache/

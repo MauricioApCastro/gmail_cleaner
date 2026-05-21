@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
@@ -25,7 +23,8 @@ from PyQt6.QtWidgets import (
 )
 
 from src.services.exception_rules import ExceptionSettings
-from src.services.gmail_actions import RemetenteVolume
+from src.services.cleanup_service import RemetenteVolume
+from src.config.settings import THEMES_DIR
 
 
 class MainWindow(QMainWindow):
@@ -111,7 +110,7 @@ class MainWindow(QMainWindow):
         )
         self._prepare_table(self.protected_table, min_height=420)
 
-        self.protect_attachments_check = QCheckBox("E-mails com anexo")
+        self.protect_attachments_check = QCheckBox("Proteger anexos")
         self.protect_attachments_check.setChecked(True)
         self.protect_recent_check = QCheckBox("Data recente")
         self.protect_recent_check.setChecked(True)
@@ -158,7 +157,9 @@ class MainWindow(QMainWindow):
 
         nav_layout = QVBoxLayout()
         nav_layout.setSpacing(8)
-        for index, item in enumerate(["Dashboard", "Remetentes", "Protegidos", "Exceções"]):
+        for index, item in enumerate(
+            ["Dashboard", "Remetentes", "Protegidos", "Exceções"]
+        ):
             button = QPushButton(item)
             button.setObjectName("navButtonActive" if index == 0 else "navButton")
             button.clicked.connect(
@@ -367,11 +368,7 @@ class MainWindow(QMainWindow):
         table.setMinimumHeight(min_height)
 
     def _load_stylesheet(self) -> None:
-        style_path = (
-            Path(__file__).resolve().parent
-            / "styles"
-            / f"{self.current_theme}_theme.qss"
-        )
+        style_path = THEMES_DIR / f"{self.current_theme}_theme.qss"
         self.setStyleSheet(style_path.read_text(encoding="utf-8"))
 
     def toggle_theme(self) -> None:
@@ -460,7 +457,9 @@ class MainWindow(QMainWindow):
             selected = bool(row.get("selected", False))
             status = str(row.get("status", ""))
             self.result_table.setItem(row_index, 0, _checkbox_item(selected))
-            self.result_table.setItem(row_index, 1, QTableWidgetItem(str(row["sender"])))
+            self.result_table.setItem(
+                row_index, 1, QTableWidgetItem(str(row["sender"]))
+            )
             self.result_table.setItem(row_index, 2, QTableWidgetItem(str(row["total"])))
             self.result_table.setItem(
                 row_index,
@@ -477,23 +476,37 @@ class MainWindow(QMainWindow):
                 5,
                 QTableWidgetItem(str(row["estimated_space"])),
             )
-            self.result_table.setItem(row_index, 6, _status_item(status, self.current_theme))
+            self.result_table.setItem(
+                row_index, 6, _status_item(status, self.current_theme)
+            )
             self.result_table.setItem(
                 row_index,
                 7,
                 QTableWidgetItem(str(row["protection_reason"])),
             )
-            self.result_table.setItem(row_index, 8, QTableWidgetItem(str(row["action"])))
+            self.result_table.setItem(
+                row_index, 8, QTableWidgetItem(str(row["action"]))
+            )
             self.result_table.setRowHeight(row_index, 42)
 
     def show_protected_rows(self, rows: list[dict[str, object]]) -> None:
         self.protected_table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
-            self.protected_table.setItem(row_index, 0, QTableWidgetItem(str(row["sender"])))
-            self.protected_table.setItem(row_index, 1, QTableWidgetItem(str(row["subject"])))
-            self.protected_table.setItem(row_index, 2, QTableWidgetItem(str(row["reason"])))
-            self.protected_table.setItem(row_index, 3, QTableWidgetItem(str(row["date"])))
-            self.protected_table.setItem(row_index, 4, QTableWidgetItem(str(row["size"])))
+            self.protected_table.setItem(
+                row_index, 0, QTableWidgetItem(str(row["sender"]))
+            )
+            self.protected_table.setItem(
+                row_index, 1, QTableWidgetItem(str(row["subject"]))
+            )
+            self.protected_table.setItem(
+                row_index, 2, QTableWidgetItem(str(row["reason"]))
+            )
+            self.protected_table.setItem(
+                row_index, 3, QTableWidgetItem(str(row["date"]))
+            )
+            self.protected_table.setItem(
+                row_index, 4, QTableWidgetItem(str(row["size"]))
+            )
             self.protected_table.setRowHeight(row_index, 38)
 
     def show_sender_ranking(
@@ -608,7 +621,9 @@ def _status_item(status: str, theme: str) -> QTableWidgetItem:
             "Protegido": QColor("#f1f3f4"),
         }
         item.setForeground(QColor("#202124"))
-    item.setBackground(colors.get(status, QColor("#2b2c2f" if theme == "dark" else "#ffffff")))
+    item.setBackground(
+        colors.get(status, QColor("#2b2c2f" if theme == "dark" else "#ffffff"))
+    )
     return item
 
 

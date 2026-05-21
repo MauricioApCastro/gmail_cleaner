@@ -13,7 +13,7 @@ def main() -> None:
     from PyQt6.QtWidgets import QApplication
 
     from src.controllers.main_controller import MainController
-    from src.views.main_window import MainWindow
+    from src.ui.main_window import MainWindow
 
     app = QApplication(sys.argv)
     window = MainWindow()
@@ -28,11 +28,11 @@ def _configure_stdout() -> None:
 
 
 def run_trash_sender_test() -> None:
-    from src.services.gmail_actions import (
+    from src.services.cleanup_service import (
         buscar_emails_por_remetente,
         mover_emails_para_lixeira,
     )
-    from src.services.gmail_auth import get_gmail_service
+    from src.auth.oauth import get_gmail_service
 
     remetente = input("Remetente para buscar: ").strip()
     if not remetente:
