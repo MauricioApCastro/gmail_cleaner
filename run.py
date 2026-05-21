@@ -43,19 +43,24 @@ def run_trash_sender_test() -> None:
     service = get_gmail_service()
 
     print(f"Buscando e-mails com query: from:{remetente}")
-    message_ids = buscar_emails_por_remetente(service, remetente)
-    total = len(message_ids)
+    resultado = buscar_emails_por_remetente(service, remetente)
+    total = resultado.total
+    sem_anexo = len(resultado.emails_sem_anexo)
+    com_anexo = len(resultado.emails_com_anexo)
     print(f"Quantidade encontrada: {total}")
+    print(f"Sem anexo: {sem_anexo}")
+    print(f"Com anexo protegidos: {com_anexo}")
 
-    if total == 0:
+    if sem_anexo == 0:
+        print("Nenhum e-mail sem anexo para mover.")
         return
 
-    confirmacao = input("Digite SIM para mover todos para a lixeira: ").strip()
+    confirmacao = input("Digite SIM para mover os e-mails sem anexo: ").strip()
     if confirmacao != "SIM":
         print("Operacao cancelada.")
         return
 
-    movidos = mover_emails_para_lixeira(service, message_ids)
+    movidos = mover_emails_para_lixeira(service, resultado.emails_sem_anexo)
     print(f"Concluido. {movidos} e-mail(s) movido(s) para a lixeira.")
 
 
