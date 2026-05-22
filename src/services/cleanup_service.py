@@ -171,6 +171,19 @@ def mover_emails_para_lixeira(
     return total
 
 
+def definir_email_importante(service, message_id: str, important: bool) -> None:
+    body = (
+        {"addLabelIds": ["IMPORTANT"], "removeLabelIds": []}
+        if important
+        else {"addLabelIds": [], "removeLabelIds": ["IMPORTANT"]}
+    )
+    service.users().messages().modify(
+        userId="me",
+        id=message_id,
+        body=body,
+    ).execute()
+
+
 def _analisar_email(service, message_id: str) -> EmailAnalysis:
     message = (
         service.users()

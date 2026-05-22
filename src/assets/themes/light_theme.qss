@@ -25,7 +25,7 @@ QLabel {
 
 #header {
     background: transparent;
-    min-height: 126px;
+    min-height: 176px;
 }
 
 #brandTitle {
@@ -142,13 +142,25 @@ QLineEdit {
     selection-color: #0F172A;
 }
 
+QComboBox {
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 10px;
+    color: #0F172A;
+    font-size: 14px;
+    min-height: 36px;
+    padding: 0 12px;
+}
+
 QLineEdit:hover,
-QSpinBox:hover {
+QSpinBox:hover,
+QComboBox:hover {
     border: 1px solid #0D6EFD;
 }
 
 QLineEdit:focus,
-QSpinBox:focus {
+QSpinBox:focus,
+QComboBox:focus {
     border: 1px solid #0D6EFD;
 }
 
@@ -226,7 +238,7 @@ QPushButton:disabled {
 }
 
 #summaryCard {
-    max-width: 900px;
+    max-width: 860px;
 }
 
 #summaryTitleIcon {
@@ -300,6 +312,44 @@ QPushButton:disabled {
     font-size: 15px;
 }
 
+#accountBadge {
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 4px 12px;
+}
+
+#accountPanelBadge {
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 750;
+    padding: 8px 14px;
+}
+
+#accountBadge[state="connected"] {
+    background: #DCFCE7;
+    border: 1px solid #86EFAC;
+    color: #166534;
+}
+
+#accountPanelBadge[state="connected"] {
+    background: #DCFCE7;
+    border: 1px solid #86EFAC;
+    color: #166534;
+}
+
+#accountBadge[state="disconnected"] {
+    background: #FEE2E2;
+    border: 1px solid #FCA5A5;
+    color: #991B1B;
+}
+
+#accountPanelBadge[state="disconnected"] {
+    background: #FEE2E2;
+    border: 1px solid #FCA5A5;
+    color: #991B1B;
+}
+
 #footerIcon,
 #footerSeparator {
     color: #94A3B8;
@@ -342,6 +392,15 @@ QPushButton:disabled {
     color: #334155;
     font-size: 13px;
     font-weight: 700;
+}
+
+#tableFilters {
+    background: transparent;
+}
+
+#tableFilter {
+    max-width: 160px;
+    min-width: 130px;
 }
 
 QCheckBox {
@@ -390,6 +449,13 @@ QTableWidget {
 
 QTableWidget::item {
     padding: 10px;
+}
+
+#selectionIndicator {
+    background: transparent;
+    color: #166534;
+    font-size: 15px;
+    font-weight: 800;
 }
 
 QHeaderView::section {

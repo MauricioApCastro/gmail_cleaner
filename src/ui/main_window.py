@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor, QIcon, QPixmap
+from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QCloseEvent, QColor, QIcon, QPixmap
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
+    QComboBox,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -28,6 +30,11 @@ from src.services.cleanup_service import RemetenteVolume
 from src.services.exception_rules import ExceptionSettings
 
 
+MIN_WINDOW_WIDTH = 1200
+MIN_WINDOW_HEIGHT = 700
+FIRST_RUN_SCREEN_RATIO = 0.88
+
+
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -35,25 +42,28 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Gmail Cleaner")
         if ICON_FILE.exists():
             self.setWindowIcon(QIcon(str(ICON_FILE)))
-        self.setMinimumSize(980, 680)
-        self.resize(1180, 760)
+        self.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
 
         self.current_theme = "light"
         self.nav_labels = [
-            "Visão Geral",
-            "Histórico",
+            "Análise",
+            "E-mails",
             "Exceções",
             "Contas",
-            "Configurações",
             "Suporte",
         ]
 
         self._create_shared_widgets()
         self._build_layout()
         self._load_stylesheet()
+        self._restore_window_placement()
         self.set_status("Não conectado", "offline")
         self.set_connected_state(False)
         self.reset_result()
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self._save_window_placement()
+        super().closeEvent(event)
 
     def _create_shared_widgets(self) -> None:
         self.connect_button = QPushButton("Conectar Gmail")
@@ -85,7 +95,11 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("Não conectado")
         self.status_label.setObjectName("footerText")
         self.account_label = QLabel("Nenhuma conta conectada")
-        self.account_label.setObjectName("footerText")
+        self.account_label.setObjectName("accountBadge")
+        self.account_label.setProperty("state", "disconnected")
+        self.account_page_label = QLabel("Nenhuma conta conectada")
+        self.account_page_label.setObjectName("accountPanelBadge")
+        self.account_page_label.setProperty("state", "disconnected")
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
@@ -117,11 +131,26 @@ class MainWindow(QMainWindow):
         )
         self._prepare_table(self.result_table, min_height=350)
 
-        self.protected_table = QTableWidget(0, 5)
-        self.protected_table.setHorizontalHeaderLabels(
-            ["Remetente", "Assunto", "Motivo", "Data", "Tamanho"]
+        self.email_table = QTableWidget(0, 5)
+        self.email_table.setHorizontalHeaderLabels(
+            ["Remetente", "Assunto", "Status", "Data", "Tamanho"]
         )
-        self._prepare_table(self.protected_table, min_height=380)
+        self._prepare_table(self.email_table, min_height=360)
+        self._prepare_email_table()
+        self.email_rows: list[dict[str, object]] = []
+        self.visible_email_rows: list[dict[str, object]] = []
+        self.email_reason_filter = QComboBox()
+        self.email_reason_filter.setObjectName("tableFilter")
+        self.email_reason_filter.addItem("Todos os status")
+        self.email_reason_filter.currentTextChanged.connect(self._apply_email_filters)
+        self.email_date_filter = QLineEdit()
+        self.email_date_filter.setObjectName("tableFilter")
+        self.email_date_filter.setPlaceholderText("Filtrar data")
+        self.email_date_filter.textChanged.connect(self._apply_email_filters)
+        self.email_size_filter = QLineEdit()
+        self.email_size_filter.setObjectName("tableFilter")
+        self.email_size_filter.setPlaceholderText("Filtrar tamanho")
+        self.email_size_filter.textChanged.connect(self._apply_email_filters)
 
         self.protect_attachments_check = QCheckBox("Proteger anexos")
         self.protect_attachments_check.setChecked(True)
@@ -132,6 +161,7 @@ class MainWindow(QMainWindow):
         self.recent_days_input = QSpinBox()
         self.recent_days_input.setRange(0, 3650)
         self.recent_days_input.setValue(30)
+        self.recent_days_input.setFixedWidth(92)
         self.protected_senders_input = QLineEdit()
         self.protected_senders_input.setPlaceholderText(
             "remetente@dominio.com, outro@dominio.com"
@@ -142,6 +172,13 @@ class MainWindow(QMainWindow):
         self.subject_keywords_input.setPlaceholderText("contrato, boleto, nota fiscal")
         self.body_keywords_input = QLineEdit()
         self.body_keywords_input.setPlaceholderText("palavras no corpo do e-mail")
+        for exception_input in (
+            self.protected_senders_input,
+            self.protected_domains_input,
+            self.subject_keywords_input,
+            self.body_keywords_input,
+        ):
+            exception_input.setFixedHeight(44)
 
     def _build_layout(self) -> None:
         root = QFrame()
@@ -150,10 +187,9 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.dashboard = Dashboard(self)
         self.stack.addWidget(self.dashboard)
-        self.stack.addWidget(self._build_history_page())
+        self.stack.addWidget(self._build_email_page())
         self.stack.addWidget(self._build_exceptions_page())
         self.stack.addWidget(self._build_accounts_page())
-        self.stack.addWidget(self._build_settings_page())
         self.stack.addWidget(self._build_support_page())
 
         self.navigation = NavigationTabs(self.nav_labels)
@@ -171,21 +207,39 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         layout.setContentsMargins(20, 14, 20, 14)
         layout.setSpacing(12)
-        layout.addWidget(Header())
+        layout.addWidget(Header(self))
         layout.addWidget(content_panel, 1)
         layout.addWidget(Footer(self))
         root.setLayout(layout)
         self.setCentralWidget(root)
 
-    def _build_history_page(self) -> QWidget:
+    def _build_email_page(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(14)
-        layout.addWidget(_page_title("Remetentes por quantidade"))
-        layout.addWidget(self.result_table, 1)
+        layout.addWidget(_page_title("E-mails analisados"))
+        layout.addWidget(self._build_email_filters())
+        layout.addWidget(self.email_table, 1)
         page.setLayout(layout)
         return page
+
+    def _build_email_filters(self) -> QFrame:
+        filters = QFrame()
+        filters.setObjectName("tableFilters")
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        layout.addStretch()
+        layout.addWidget(_form_label("Status"))
+        layout.addWidget(self.email_reason_filter)
+        layout.addWidget(_form_label("Data"))
+        layout.addWidget(self.email_date_filter)
+        layout.addWidget(_form_label("Tamanho"))
+        layout.addWidget(self.email_size_filter)
+        filters.setLayout(layout)
+        return filters
 
     def _build_exceptions_page(self) -> QWidget:
         page = QWidget()
@@ -194,8 +248,7 @@ class MainWindow(QMainWindow):
         layout.setSpacing(14)
         layout.addWidget(_page_title("Exceções / Proteções"))
         layout.addWidget(self._build_exceptions_card())
-        layout.addWidget(_page_title("Protegidos"))
-        layout.addWidget(self.protected_table, 1)
+        layout.addStretch()
         page.setLayout(layout)
         return page
 
@@ -206,6 +259,8 @@ class MainWindow(QMainWindow):
 
         title = QLabel("Conta Gmail")
         title.setObjectName("sectionTitle")
+        current_account_title = QLabel("Conta conectada no momento")
+        current_account_title.setObjectName("fieldLabel")
         text = QLabel(
             "Conecte sua conta pelo login oficial do Google. Ao desconectar, "
             "o token local também será removido."
@@ -217,6 +272,8 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(28, 26, 28, 26)
         layout.setSpacing(16)
         layout.addWidget(title)
+        layout.addWidget(current_account_title)
+        layout.addWidget(self.account_page_label, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(text)
         layout.addWidget(self.connect_button, 0, Qt.AlignmentFlag.AlignLeft)
         layout.addStretch()
@@ -228,13 +285,6 @@ class MainWindow(QMainWindow):
         page.setLayout(page_layout)
         return page
 
-    def _build_settings_page(self) -> QWidget:
-        return _simple_page(
-            "Configurações",
-            "Tema claro fixo, proteção por anexos ativada por padrão e limpeza sempre "
-            "com confirmação antes de mover mensagens para a lixeira.",
-        )
-
     def _build_support_page(self) -> QWidget:
         return _simple_page(
             "Suporte",
@@ -244,6 +294,43 @@ class MainWindow(QMainWindow):
     def _build_exceptions_card(self) -> QFrame:
         card = QFrame()
         card.setObjectName("pageCard")
+        card.setMinimumHeight(270)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 20, 24, 24)
+        layout.setSpacing(16)
+
+        toggles = QHBoxLayout()
+        toggles.setContentsMargins(0, 0, 0, 0)
+        toggles.setSpacing(22)
+        toggles.addWidget(self.protect_attachments_check)
+        toggles.addWidget(self.protect_recent_check)
+        toggles.addWidget(self.protect_important_check)
+        toggles.addStretch()
+        toggles.addWidget(_form_label("Últimos dias"))
+        toggles.addWidget(self.recent_days_input)
+
+        form = QGridLayout()
+        form.setContentsMargins(0, 0, 0, 0)
+        form.setHorizontalSpacing(14)
+        form.setVerticalSpacing(12)
+        form.addWidget(_form_label("Remetentes protegidos"), 0, 0)
+        form.addWidget(self.protected_senders_input, 0, 1)
+        form.addWidget(_form_label("Domínios protegidos"), 1, 0)
+        form.addWidget(self.protected_domains_input, 1, 1)
+        form.addWidget(_form_label("Assunto contém"), 2, 0)
+        form.addWidget(self.subject_keywords_input, 2, 1)
+        form.addWidget(_form_label("Corpo contém"), 3, 0)
+        form.addWidget(self.body_keywords_input, 3, 1)
+        form.setColumnMinimumWidth(0, 170)
+        form.setColumnStretch(1, 1)
+        for row in range(4):
+            form.setRowMinimumHeight(row, 46)
+
+        layout.addLayout(toggles)
+        layout.addLayout(form)
+        card.setLayout(layout)
+        return card
+
         layout = QGridLayout()
         layout.setContentsMargins(24, 22, 24, 24)
         layout.setHorizontalSpacing(12)
@@ -272,6 +359,7 @@ class MainWindow(QMainWindow):
 
     def _prepare_table(self, table: QTableWidget, min_height: int) -> None:
         table.verticalHeader().setVisible(False)
+        table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         table.setAlternatingRowColors(True)
@@ -282,9 +370,59 @@ class MainWindow(QMainWindow):
         )
         table.setMinimumHeight(min_height)
 
+    def _prepare_email_table(self) -> None:
+        header = self.email_table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        header.setSectionResizeMode(3, QHeaderView.ResizeMode.Fixed)
+        header.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        self.email_table.setColumnWidth(0, 260)
+        self.email_table.setColumnWidth(2, 130)
+        self.email_table.setColumnWidth(3, 96)
+        self.email_table.setColumnWidth(4, 76)
+
     def _load_stylesheet(self) -> None:
         style_path = THEMES_DIR / "light_theme.qss"
         self.setStyleSheet(style_path.read_text(encoding="utf-8"))
+
+    def _restore_window_placement(self) -> None:
+        settings = _window_settings()
+        saved_geometry = settings.value("geometry")
+        was_maximized = settings.value("maximized", False, type=bool)
+
+        if saved_geometry and self.restoreGeometry(saved_geometry):
+            if was_maximized:
+                self.setWindowState(self.windowState() | Qt.WindowState.WindowMaximized)
+            return
+
+        self._set_first_run_geometry()
+
+    def _save_window_placement(self) -> None:
+        settings = _window_settings()
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue("maximized", self.isMaximized())
+
+    def _set_first_run_geometry(self) -> None:
+        screen = QApplication.primaryScreen()
+        if screen is None:
+            self.resize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
+            return
+
+        available = screen.availableGeometry()
+        width = max(
+            MIN_WINDOW_WIDTH,
+            min(available.width(), int(available.width() * FIRST_RUN_SCREEN_RATIO)),
+        )
+        height = max(
+            MIN_WINDOW_HEIGHT,
+            min(available.height(), int(available.height() * FIRST_RUN_SCREEN_RATIO)),
+        )
+        self.resize(width, height)
+
+        frame = self.frameGeometry()
+        frame.moveCenter(available.center())
+        self.move(frame.topLeft())
 
     def set_status(self, message: str, state: str = "idle") -> None:
         self.status_label.setText(message)
@@ -306,17 +444,59 @@ class MainWindow(QMainWindow):
         self.trash_button.setEnabled(trash)
         self.next_button.setEnabled(next_sender)
 
+    def set_search_running(self, running: bool, stopping: bool = False) -> None:
+        if running:
+            self.search_button.setText("Cancelando..." if stopping else "Cancelar análise")
+            self.search_button.setObjectName("dangerButton" if stopping else "heroButton")
+            self.search_button.setEnabled(not stopping)
+        else:
+            self.search_button.setText("🔍  Analisar")
+            self.search_button.setObjectName("heroButton")
+        self.search_button.style().unpolish(self.search_button)
+        self.search_button.style().polish(self.search_button)
+
+    def set_ranking_running(self, running: bool, stopping: bool = False) -> None:
+        if running:
+            self.rank_button.setText("Cancelando..." if stopping else "Cancelar ranking")
+            self.rank_button.setObjectName("dangerButton" if stopping else "secondaryButton")
+            self.rank_button.setEnabled(not stopping)
+        else:
+            self.rank_button.setText("Ranking por volume")
+            self.rank_button.setObjectName("secondaryButton")
+        self.rank_button.style().unpolish(self.rank_button)
+        self.rank_button.style().polish(self.rank_button)
+
     def set_connected_state(self, connected: bool) -> None:
         if connected:
             self.connect_button.setText("Desconectar conta")
             self.connect_button.setObjectName("dangerButton")
             self.account_label.setText("Conta Gmail conectada")
+            self.account_label.setProperty("state", "connected")
+            self.account_page_label.setText("Conta Gmail conectada")
+            self.account_page_label.setProperty("state", "connected")
         else:
             self.connect_button.setText("Conectar Gmail")
             self.connect_button.setObjectName("primaryButton")
             self.account_label.setText("Nenhuma conta conectada")
+            self.account_label.setProperty("state", "disconnected")
+            self.account_page_label.setText("Nenhuma conta conectada")
+            self.account_page_label.setProperty("state", "disconnected")
         self.connect_button.style().unpolish(self.connect_button)
         self.connect_button.style().polish(self.connect_button)
+        self.account_label.style().unpolish(self.account_label)
+        self.account_label.style().polish(self.account_label)
+        self.account_page_label.style().unpolish(self.account_page_label)
+        self.account_page_label.style().polish(self.account_page_label)
+
+    def set_account_email(self, email_address: str) -> None:
+        if email_address:
+            self.account_page_label.setText(email_address)
+            self.account_page_label.setProperty("state", "connected")
+        else:
+            self.account_page_label.setText("Nenhuma conta conectada")
+            self.account_page_label.setProperty("state", "disconnected")
+        self.account_page_label.style().unpolish(self.account_page_label)
+        self.account_page_label.style().polish(self.account_page_label)
 
     def get_sender(self) -> str:
         return self.sender_input.text().strip()
@@ -366,7 +546,7 @@ class MainWindow(QMainWindow):
         for row_index, row in enumerate(rows):
             selected = bool(row.get("selected", False))
             status = str(row.get("status", ""))
-            self.result_table.setItem(row_index, 0, _checkbox_item(selected))
+            self.result_table.setCellWidget(row_index, 0, _selection_indicator(selected))
             self.result_table.setItem(
                 row_index, 1, QTableWidgetItem(str(row["sender"]))
             )
@@ -390,24 +570,75 @@ class MainWindow(QMainWindow):
             self.result_table.setRowHeight(row_index, 42)
 
     def show_protected_rows(self, rows: list[dict[str, object]]) -> None:
-        self.protected_table.setRowCount(len(rows))
+        self.show_email_rows(rows)
+
+    def show_email_rows(self, rows: list[dict[str, object]]) -> None:
+        self.email_rows = rows
+        self._refresh_email_reason_filter(rows)
+        self._apply_email_filters()
+
+    def _refresh_email_reason_filter(self, rows: list[dict[str, object]]) -> None:
+        current_filter = self.email_reason_filter.currentText()
+        reasons = sorted({str(row.get("reason", "")) for row in rows if row.get("reason")})
+
+        self.email_reason_filter.blockSignals(True)
+        self.email_reason_filter.clear()
+        self.email_reason_filter.addItem("Todos os status")
+        self.email_reason_filter.addItems(reasons)
+        if current_filter in reasons:
+            self.email_reason_filter.setCurrentText(current_filter)
+        self.email_reason_filter.blockSignals(False)
+
+    def _apply_email_filters(self) -> None:
+        reason_filter = self.email_reason_filter.currentText()
+        date_filter = self.email_date_filter.text().strip().lower()
+        size_filter = self.email_size_filter.text().strip().lower()
+
+        rows = []
+        for row in self.email_rows:
+            reason = str(row.get("reason", ""))
+            date = str(row.get("date", ""))
+            size = str(row.get("size", ""))
+
+            if reason_filter != "Todos os status" and reason != reason_filter:
+                continue
+            if date_filter and date_filter not in date.lower():
+                continue
+            if size_filter and size_filter not in size.lower():
+                continue
+            rows.append(row)
+
+        self._render_email_rows(rows)
+
+    def _render_email_rows(self, rows: list[dict[str, object]]) -> None:
+        self.visible_email_rows = rows
+        self.email_table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
-            self.protected_table.setItem(
+            self.email_table.setItem(
                 row_index, 0, QTableWidgetItem(str(row["sender"]))
             )
-            self.protected_table.setItem(
+            self.email_table.setItem(
                 row_index, 1, QTableWidgetItem(str(row["subject"]))
             )
-            self.protected_table.setItem(
+            self.email_table.setItem(
                 row_index, 2, QTableWidgetItem(str(row["reason"]))
             )
-            self.protected_table.setItem(
+            self.email_table.setItem(
                 row_index, 3, QTableWidgetItem(str(row["date"]))
             )
-            self.protected_table.setItem(
+            self.email_table.setItem(
                 row_index, 4, QTableWidgetItem(str(row["size"]))
             )
-            self.protected_table.setRowHeight(row_index, 38)
+            self.email_table.setRowHeight(row_index, 38)
+        self.email_table.viewport().update()
+
+    def get_visible_email_message_id(self, row: int) -> str:
+        if row < 0 or row >= len(self.visible_email_rows):
+            return ""
+        return str(self.visible_email_rows[row].get("message_id", ""))
+
+    def show_all_email_statuses(self) -> None:
+        self.email_reason_filter.setCurrentText("Todos os status")
 
     def show_sender_ranking(
         self,
@@ -434,7 +665,7 @@ class MainWindow(QMainWindow):
                     ),
                 }
             )
-        self.show_result_rows(rows)
+        self.show_email_rows(_ranking_email_rows(rows))
         self.navigate_to_page(1)
 
     def reset_result(self) -> None:
@@ -449,7 +680,7 @@ class MainWindow(QMainWindow):
             }
         )
         self.show_result_rows([])
-        self.show_protected_rows([])
+        self.show_email_rows([])
 
     def confirm_move_to_trash(self, quantidade: int, protegidos: int) -> bool:
         resposta = QMessageBox.question(
@@ -485,7 +716,7 @@ class TopBar(QFrame):
 
 
 class Header(QFrame):
-    def __init__(self) -> None:
+    def __init__(self, window: MainWindow) -> None:
         super().__init__()
         self.setObjectName("header")
 
@@ -510,13 +741,13 @@ class Header(QFrame):
         text_layout.addWidget(slogan)
         text_layout.addWidget(byline)
 
-        badge = SecurityBadge()
+        summary = SummaryCard(window)
 
         layout = QHBoxLayout()
         layout.setContentsMargins(40, 8, 40, 8)
         layout.setSpacing(28)
         layout.addLayout(text_layout, 1)
-        layout.addWidget(badge)
+        layout.addWidget(summary, 3)
         self.setLayout(layout)
 
 
@@ -555,7 +786,7 @@ class NavigationTabs(QFrame):
         super().__init__()
         self.setObjectName("navigation")
         self.buttons: list[QPushButton] = []
-        icons = ["⌂", "◷", "◇", "✉", "⚙", "?"]
+        icons = ["⌂", "✉", "◇", "◎", "?"]
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -563,6 +794,7 @@ class NavigationTabs(QFrame):
         for index, label in enumerate(labels):
             button = QPushButton(f"{icons[index]}  {label}")
             button.setObjectName("tabActive" if index == 0 else "tabButton")
+            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             button.clicked.connect(
                 lambda _checked=False, page=index: self.tab_changed.emit(page)
             )
@@ -595,9 +827,10 @@ class Dashboard(QWidget):
 
         input_row = QFrame()
         input_row.setObjectName("searchRow")
+        input_row.setMinimumWidth(520)
         input_layout = QHBoxLayout()
         input_layout.setContentsMargins(0, 0, 0, 0)
-        input_layout.setSpacing(10)
+        input_layout.setSpacing(12)
         input_layout.addWidget(window.sender_input, 1)
         input_layout.addWidget(window.rank_button)
         input_row.setLayout(input_layout)
@@ -608,24 +841,14 @@ class Dashboard(QWidget):
         actions.addWidget(window.search_button)
         actions.addStretch()
 
-        cleanup_actions = QHBoxLayout()
-        cleanup_actions.setContentsMargins(0, 0, 0, 0)
-        cleanup_actions.addStretch()
-        cleanup_actions.addWidget(window.trash_button)
-        cleanup_actions.addStretch()
-
         layout = QVBoxLayout()
-        layout.setContentsMargins(18, 30, 18, 8)
-        layout.setSpacing(16)
+        layout.setContentsMargins(36, 22, 36, 10)
+        layout.setSpacing(12)
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(input_row, 0, Qt.AlignmentFlag.AlignCenter)
         layout.addLayout(actions)
         layout.addWidget(window.progress_bar)
-        layout.addLayout(cleanup_actions)
-        layout.addSpacing(10)
-        layout.addWidget(SummaryCard(window), 0, Qt.AlignmentFlag.AlignCenter)
-        layout.addStretch()
         self.setLayout(layout)
 
 
@@ -634,6 +857,9 @@ class SummaryCard(QFrame):
         super().__init__()
         self.setObjectName("summaryCard")
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.setMinimumWidth(720)
+        self.setMaximumWidth(860)
+        self.setMinimumHeight(156)
 
         title_icon = QLabel("⌁")
         title_icon.setObjectName("summaryTitleIcon")
@@ -641,14 +867,15 @@ class SummaryCard(QFrame):
         title.setObjectName("summaryTitle")
 
         header = QHBoxLayout()
-        header.setContentsMargins(24, 18, 24, 16)
+        header.setContentsMargins(24, 14, 24, 12)
         header.setSpacing(10)
         header.addWidget(title_icon)
         header.addWidget(title)
         header.addStretch()
+        header.addWidget(window.trash_button)
 
         metrics = QHBoxLayout()
-        metrics.setContentsMargins(28, 22, 28, 26)
+        metrics.setContentsMargins(28, 12, 28, 16)
         metrics.setSpacing(0)
         for index, metric in enumerate(
             [
@@ -676,6 +903,7 @@ class SummaryMetric(QFrame):
         super().__init__()
         self.setObjectName("summaryMetric")
         self.setProperty("tone", color)
+        self.setMinimumHeight(78)
 
         icon_label = QLabel(icon)
         icon_label.setObjectName("metricIcon")
@@ -689,7 +917,7 @@ class SummaryMetric(QFrame):
 
         layout = QVBoxLayout()
         layout.setContentsMargins(12, 0, 12, 0)
-        layout.setSpacing(8)
+        layout.setSpacing(6)
         layout.addWidget(icon_label)
         layout.addWidget(self.value_label)
         layout.addWidget(title_label)
@@ -704,30 +932,21 @@ class Footer(QFrame):
         super().__init__()
         self.setObjectName("footer")
 
-        separator_left = QLabel("|")
-        separator_left.setObjectName("footerSeparator")
         separator_right = QLabel("|")
         separator_right.setObjectName("footerSeparator")
 
-        shield = QLabel("◇")
-        shield.setObjectName("footerIcon")
         version = QLabel("v1.0.0")
         version.setObjectName("footerText")
-        about = QLabel("Sobre o Gmail Cleaner")
-        about.setObjectName("footerText")
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(14)
         layout.addWidget(window.status_dot)
         layout.addWidget(window.status_label)
-        layout.addWidget(separator_left)
-        layout.addWidget(shield)
-        layout.addWidget(window.account_label)
         layout.addStretch()
         layout.addWidget(version)
         layout.addWidget(separator_right)
-        layout.addWidget(about)
+        layout.addWidget(window.account_label)
         self.setLayout(layout)
 
 
@@ -776,15 +995,11 @@ def _horizontal_rule() -> QFrame:
     return rule
 
 
-def _checkbox_item(checked: bool) -> QTableWidgetItem:
-    item = QTableWidgetItem()
-    item.setFlags(
-        Qt.ItemFlag.ItemIsEnabled
-        | Qt.ItemFlag.ItemIsUserCheckable
-        | Qt.ItemFlag.ItemIsSelectable
-    )
-    item.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
-    return item
+def _selection_indicator(checked: bool) -> QLabel:
+    label = QLabel("✓" if checked else "")
+    label.setObjectName("selectionIndicator")
+    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    return label
 
 
 def _status_item(status: str) -> QTableWidgetItem:
@@ -801,6 +1016,19 @@ def _status_item(status: str) -> QTableWidgetItem:
     return item
 
 
+def _ranking_email_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    return [
+        {
+            "sender": row["sender"],
+            "subject": "-",
+            "reason": f"{row['total']} e-mail(s) no remetente",
+            "date": "-",
+            "size": row["estimated_space"],
+        }
+        for row in rows
+    ]
+
+
 def _form_label(text: str) -> QLabel:
     label = QLabel(text)
     label.setObjectName("fieldLabel")
@@ -813,3 +1041,7 @@ def _split_values(value: str) -> set[str]:
         for part in value.replace("\n", ",").split(",")
         if part.strip()
     }
+
+
+def _window_settings() -> QSettings:
+    return QSettings("MacTecnology", "GmailCleaner")
