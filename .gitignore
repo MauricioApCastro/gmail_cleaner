@@ -1,10 +1,13 @@
 # Python cache and bytecode
 __pycache__/
+**/__pycache__/
+*.pyc
 *.py[cod]
 *.pyo
 
 # Virtual environments
 .venv/
+.venv*/
 venv/
 env/
 
@@ -14,13 +17,19 @@ env/
 
 # Local Gmail credentials and tokens
 credentials/*
+credentials/client_secret.json
+credentials/token.json
 !credentials/.gitkeep
 token.json
+**/token.json
 *.secret.json
 logs/
+*.log
+src/logs/
 src/data/accounts/*
 src/data/exceptions/*
 src/data/history/*
+src/data/history/*.jsonl
 src/data/cache/*
 !src/data/accounts/.gitkeep
 !src/data/exceptions/.gitkeep
