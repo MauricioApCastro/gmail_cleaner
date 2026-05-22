@@ -18,9 +18,8 @@ QLabel {
 }
 
 #brandIcon {
-    background: #EFF6FF;
-    border: 2px solid #1677FF;
-    border-radius: 14px;
+    background: transparent;
+    border: 0;
     color: #1677FF;
     font-size: 32px;
     font-weight: 800;
@@ -564,5 +563,23 @@ QMessageBox {
 
 QMessageBox QLabel {
     color: #0F172A;
+    font-size: 14px;
+}
+
+#warningDialogIcon {
+    background: #FEF3C7;
+    border: 1px solid #F97316;
+    border-radius: 18px;
+    color: #F97316;
+    font-size: 22px;
+    font-weight: 900;
+    min-width: 36px;
+    max-width: 36px;
+    min-height: 36px;
+    max-height: 36px;
+}
+
+#warningDialogText {
+    color: #071A3D;
     font-size: 14px;
 }

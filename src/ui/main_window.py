@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QCloseEvent, QColor, QIcon
+from PyQt6.QtGui import QCloseEvent, QColor, QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -25,7 +26,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from src.config.settings import ICON_FILE, THEMES_DIR
+from src.config.settings import ICON_FILE, LOGO_FILE, THEMES_DIR
 from src.services.cleanup_service import RemetenteVolume
 from src.services.exception_rules import ExceptionSettings
 
@@ -690,20 +691,54 @@ class MainWindow(QMainWindow):
         self.show_email_rows([])
 
     def confirm_move_to_trash(self, quantidade: int, protegidos: int) -> bool:
-        resposta = QMessageBox.question(
-            self,
-            "Confirmar limpeza",
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Confirmar limpeza")
+        dialog.setModal(True)
+        dialog.setMinimumWidth(520)
+
+        icon = QLabel("!")
+        icon.setObjectName("warningDialogIcon")
+        icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        message = QLabel(
             (
                 f"{quantidade} e-mail(s) serão movidos para a lixeira.\n\n"
                 f"{protegidos} e-mail(s) foram protegidos por regras de exceção.\n\n"
                 "E-mails protegidos serão preservados e nenhum e-mail será "
-                "excluído permanentemente.\n\n"
-                "Deseja continuar?"
-            ),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+                "excluído permanentemente."
+            )
         )
-        return resposta == QMessageBox.StandardButton.Yes
+        message.setObjectName("warningDialogText")
+        message.setWordWrap(True)
+
+        content = QHBoxLayout()
+        content.setContentsMargins(0, 0, 0, 0)
+        content.setSpacing(18)
+        content.addWidget(icon)
+        content.addWidget(message, 1)
+
+        confirm_button = QPushButton("Confirmar limpeza")
+        confirm_button.setObjectName("dangerButton")
+        cancel_button = QPushButton("Cancelar")
+        cancel_button.setObjectName("secondaryButton")
+        confirm_button.clicked.connect(dialog.accept)
+        cancel_button.clicked.connect(dialog.reject)
+
+        actions = QHBoxLayout()
+        actions.setContentsMargins(0, 8, 0, 0)
+        actions.setSpacing(12)
+        actions.addStretch()
+        actions.addWidget(cancel_button)
+        actions.addWidget(confirm_button)
+
+        layout = QVBoxLayout()
+        layout.setContentsMargins(24, 22, 24, 22)
+        layout.setSpacing(18)
+        layout.addLayout(content)
+        layout.addLayout(actions)
+        dialog.setLayout(layout)
+
+        return dialog.exec() == QDialog.DialogCode.Accepted
 
 
 class Header(QFrame):
@@ -714,6 +749,17 @@ class Header(QFrame):
         icon = QLabel("✉")
         icon.setObjectName("brandIcon")
         icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        if LOGO_FILE.exists():
+            logo = QPixmap(str(LOGO_FILE))
+            if not logo.isNull():
+                icon.setPixmap(
+                    logo.scaled(
+                        54,
+                        54,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    )
+                )
 
         title = QLabel(
             '<span style="color:#071A3D">Gmail</span> '
