@@ -51,7 +51,7 @@ class MainController(QObject):
         self.window.connect_button.clicked.connect(self.toggle_gmail_connection)
         self.window.search_button.clicked.connect(self.search_sender)
         self.window.rank_button.clicked.connect(self.find_sender_ranking)
-        self.window.next_button.clicked.connect(self.search_sender)
+        self.window.next_button.clicked.connect(self.next_sender)
         self.window.trash_button.clicked.connect(self.move_found_to_trash)
         self.window.result_table.cellClicked.connect(self.select_sender_from_ranking)
         self.window.email_table.cellDoubleClicked.connect(self.toggle_email_importance)

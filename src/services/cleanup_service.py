@@ -132,7 +132,6 @@ def buscar_emails_por_remetente(
         request = service.users().messages().list(**request_params)
         response = request.execute()
         message_ids.extend(message["id"] for message in response.get("messages", []))
-        print(f"Encontrados ate agora: {len(message_ids)}")
 
         page_token = response.get("nextPageToken")
         if not page_token:
@@ -145,7 +144,6 @@ def buscar_emails_por_remetente(
         progress_callback(0, total)
 
     for index, message_id in enumerate(message_ids, start=1):
-        print(f"Verificando anexos {index}/{total}...")
         emails.append(_analisar_email(service, message_id))
         if progress_callback is not None:
             progress_callback(index, total)
@@ -163,7 +161,6 @@ def mover_emails_para_lixeira(
         progress_callback(0, total)
 
     for index, message_id in enumerate(message_ids, start=1):
-        print(f"Movendo {index}/{total} para a lixeira...")
         service.users().messages().trash(userId="me", id=message_id).execute()
         if progress_callback is not None:
             progress_callback(index, total)

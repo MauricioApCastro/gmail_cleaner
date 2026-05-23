@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.rank_button.setObjectName("secondaryButton")
         self.rank_button.setEnabled(False)
 
-        self.next_button = QPushButton("Pré-visualizar limpeza")
+        self.next_button = QPushButton("Próximo remetente")
         self.next_button.setObjectName("secondaryButton")
         self.next_button.setEnabled(False)
         self.next_button.setVisible(False)
@@ -333,28 +333,6 @@ class MainWindow(QMainWindow):
         card.setLayout(layout)
         return card
 
-        layout = QGridLayout()
-        layout.setContentsMargins(24, 22, 24, 24)
-        layout.setHorizontalSpacing(12)
-        layout.setVerticalSpacing(12)
-
-        layout.addWidget(self.protect_attachments_check, 0, 0)
-        layout.addWidget(self.protect_recent_check, 0, 1)
-        layout.addWidget(_form_label("Últimos dias"), 0, 2)
-        layout.addWidget(self.recent_days_input, 0, 3)
-        layout.addWidget(self.protect_important_check, 1, 0)
-        layout.addWidget(_form_label("Remetentes protegidos"), 2, 0)
-        layout.addWidget(self.protected_senders_input, 2, 1, 1, 3)
-        layout.addWidget(_form_label("Domínios protegidos"), 3, 0)
-        layout.addWidget(self.protected_domains_input, 3, 1, 1, 3)
-        layout.addWidget(_form_label("Assunto contém"), 4, 0)
-        layout.addWidget(self.subject_keywords_input, 4, 1, 1, 3)
-        layout.addWidget(_form_label("Corpo contém"), 5, 0)
-        layout.addWidget(self.body_keywords_input, 5, 1, 1, 3)
-        layout.setColumnStretch(1, 1)
-        card.setLayout(layout)
-        return card
-
     def navigate_to_page(self, page: int) -> None:
         self.stack.setCurrentIndex(page)
         self.navigation.set_active(page)
@@ -445,6 +423,7 @@ class MainWindow(QMainWindow):
         self.rank_button.setEnabled(rank)
         self.trash_button.setEnabled(trash)
         self.next_button.setEnabled(next_sender)
+        self.next_button.setVisible(next_sender)
 
     def set_search_running(self, running: bool, stopping: bool = False) -> None:
         if running:
@@ -673,6 +652,7 @@ class MainWindow(QMainWindow):
                     ),
                 }
             )
+        self.show_result_rows(rows)
         self.show_email_rows(_ranking_email_rows(rows))
         self.navigate_to_page(1)
 
@@ -856,6 +836,7 @@ class Dashboard(QWidget):
         search_layout.addWidget(window.sender_input, 1)
         search_layout.addWidget(window.search_button)
         search_layout.addWidget(window.rank_button)
+        search_layout.addWidget(window.next_button)
         search_bar.setLayout(search_layout)
 
         cards = QHBoxLayout()

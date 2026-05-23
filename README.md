@@ -1,49 +1,53 @@
 # Gmail Cleaner
 
-Projeto em Python para autenticar com Gmail, listar emails e preparar rotinas de limpeza.
+Aplicativo desktop em Python/PyQt6 para conectar ao Gmail, ranquear remetentes por volume e mover e-mails selecionados para a lixeira com regras de protecao.
 
-## Setup
+## Abrir no Windows
 
-1. Crie e ative um ambiente virtual:
+Na pasta `gmail cleaner`, use:
+
+```powershell
+.\start_gmail_cleaner.bat
+```
+
+Se voce estiver dentro da pasta `gmail_cleaner`, tambem pode usar:
+
+```powershell
+.\start_gmail_cleaner.bat
+```
+
+Ou diretamente pelo Python da venv, a partir da pasta `gmail cleaner`:
+
+```powershell
+.\.venv\Scripts\python.exe gmail_cleaner\run.py
+```
+
+## Setup do ambiente
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\python.exe -m pip install -r gmail_cleaner\requirements.txt
 ```
 
-2. Instale as dependencias:
+## Credenciais do Gmail
 
-```powershell
-pip install -r requirements.txt
-```
-
-3. No Google Cloud Console, crie um OAuth Client ID do tipo **Desktop app** com a Gmail API habilitada.
-
-4. Baixe o arquivo JSON do OAuth Client e salve como:
+1. No Google Cloud Console, crie um OAuth Client ID do tipo **Desktop app** com a Gmail API habilitada.
+2. Baixe o JSON do OAuth Client.
+3. Salve o arquivo em:
 
 ```text
-credentials/client_secret.json
+gmail_cleaner\credentials\client_secret.json
 ```
 
-Se o Windows esconder extensoes, confirme que o arquivo nao ficou como `client_secret.json.json`.
+Na primeira conexao, o navegador abre para login e consentimento do Gmail. Depois disso, o token local fica salvo em `gmail_cleaner\credentials\token.json`.
 
-5. Execute:
+## Fluxo principal
 
-```powershell
-python run.py
-```
-
-Na primeira execucao, o navegador abre para login e consentimento do Gmail. Se ele nao abrir automaticamente, copie o link mostrado no terminal e abra no navegador. Depois disso, o token local fica salvo em `credentials/token.json`.
-
-Ao executar, o script mostra:
-
-- A tela inicial do Gmail Cleaner.
-- O botao para conectar ao Gmail.
-- O status da conexao.
-- O botao para carregar emails.
-
-O servico principal de leitura fica em `src/services/gmail_service.py` e expoe funcoes para listar emails, pegar assunto, remetente, data e quantidade total.
+- Conecte a conta Gmail.
+- Busque um remetente manualmente ou gere o ranking por volume.
+- Revise os e-mails analisados e as protecoes aplicadas.
+- Confirme a limpeza para mover somente os e-mails liberados para a lixeira.
 
 ## Seguranca
 
-Os arquivos em `credentials/` sao ignorados pelo Git para evitar vazamento de credenciais e tokens.
+Arquivos de credenciais, tokens e historicos locais sao ignorados pelo Git. Nao publique `client_secret.json`, `token.json` ou dados gerados em `src/data/`.
