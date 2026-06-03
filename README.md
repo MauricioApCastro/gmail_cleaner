@@ -1,6 +1,6 @@
 # Gmail Cleaner
 
-Gmail Cleaner é um aplicativo desktop em Python/PyQt6 para ajudar a encontrar remetentes que ocupam muito espaço no Gmail e mover e-mails selecionados para a lixeira com regras de proteção.
+Gmail Cleaner é um aplicativo desktop em Python/PyQt6 para ajudar a encontrar os maiores consumidores de espaço no Gmail, ordenar os remetentes do maior para o menor e mover e-mails selecionados para a lixeira com regras de proteção.
 
 O foco do projeto é **limpeza com controle**: antes de mover qualquer mensagem, o app analisa anexos, e-mails recentes, marcadores de importância/estrela e exceções configuradas pelo usuário.
 
@@ -8,10 +8,11 @@ O foco do projeto é **limpeza com controle**: antes de mover qualquer mensagem,
 
 Caixas de Gmail acumulam milhares de mensagens antigas, promoções, notificações e remetentes recorrentes. Limpar manualmente é demorado e arriscado, principalmente quando há e-mails importantes, mensagens recentes ou arquivos anexados.
 
-O Gmail Cleaner ajuda a identificar os remetentes que mais acumulam mensagens e permite revisar os e-mails antes de mover mensagens para a lixeira.
+O Gmail Cleaner ajuda a identificar os remetentes que mais consomem espaço ou acumulam mensagens, mostrando um ranking do maior para o menor. A partir dessa análise, o usuário escolhe o que deseja revisar e mover para a lixeira.
 
 ## Diferenciais
 
+- Mostra um ranking dos maiores consumidores de espaço/mensagens, do maior para o menor.
 - Não exclui permanentemente: move mensagens para a lixeira.
 - Protege automaticamente e-mails com anexos.
 - Protege mensagens recentes, importantes ou com estrela.
@@ -38,7 +39,7 @@ O Gmail Cleaner ajuda a identificar os remetentes que mais acumulam mensagens e 
 
 - Login com OAuth 2.0 usando a conta Google.
 - Busca manual por remetente ou domínio.
-- Ranking de remetentes por volume de mensagens.
+- Ranking de remetentes por volume de mensagens, organizado do maior para o menor consumidor.
 - Pré-visualização dos e-mails antes da limpeza.
 - Proteção automática para e-mails com anexo.
 - Proteção para e-mails recentes, importantes ou com estrela.
@@ -121,7 +122,7 @@ Ou diretamente pelo Python:
 
 1. Abra o aplicativo.
 2. Clique em **Conectar Gmail**.
-3. Busque um remetente manualmente ou gere o ranking por volume.
+3. Gere o ranking dos maiores consumidores ou busque um remetente manualmente.
 4. Revise a lista de e-mails analisados.
 5. Ajuste as exceções, se necessário.
 6. Confirme a limpeza para mover os e-mails liberados para a lixeira.
@@ -176,7 +177,7 @@ Exemplo de serviço:
 
 ```text
 diagnóstico da caixa de entrada
-identificação dos remetentes mais volumosos
+identificação dos maiores consumidores de espaço, do maior para o menor
 prévia dos e-mails que podem ser limpos
 configuração de exceções
 movimentação segura para a lixeira
