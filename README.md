@@ -2,7 +2,23 @@
 
 Gmail Cleaner é um aplicativo desktop em Python/PyQt6 para ajudar a encontrar remetentes que ocupam muito espaço no Gmail e mover e-mails selecionados para a lixeira com regras de proteção.
 
-O foco do projeto é limpeza com controle: antes de mover qualquer mensagem, o app analisa anexos, e-mails recentes, marcadores de importância/estrela e exceções configuradas pelo usuário.
+O foco do projeto é **limpeza com controle**: antes de mover qualquer mensagem, o app analisa anexos, e-mails recentes, marcadores de importância/estrela e exceções configuradas pelo usuário.
+
+## Problema Que Resolve
+
+Caixas de Gmail acumulam milhares de mensagens antigas, promoções, notificações e remetentes recorrentes. Limpar manualmente é demorado e arriscado, principalmente quando há e-mails importantes, mensagens recentes ou arquivos anexados.
+
+O Gmail Cleaner ajuda a identificar os remetentes que mais acumulam mensagens e permite revisar os e-mails antes de mover mensagens para a lixeira.
+
+## Diferenciais
+
+- Não exclui permanentemente: move mensagens para a lixeira.
+- Protege automaticamente e-mails com anexos.
+- Protege mensagens recentes, importantes ou com estrela.
+- Permite pré-visualizar os e-mails antes da limpeza.
+- Permite criar regras de exceção por remetente, domínio, assunto e corpo.
+- Mantém histórico local das limpezas executadas.
+- Usa autenticação OAuth 2.0 do Google, sem solicitar senha do Gmail.
 
 ## Screenshots
 
@@ -36,6 +52,7 @@ O foco do projeto é limpeza com controle: antes de mover qualquer mensagem, o a
 - PyQt6
 - Gmail API
 - Google OAuth 2.0
+- unittest
 
 ## Requisitos
 
@@ -61,7 +78,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-## Credenciais do Gmail
+## Credenciais Do Gmail
 
 1. Acesse o Google Cloud Console.
 2. Crie ou selecione um projeto.
@@ -72,6 +89,12 @@ python -m venv .venv
 
 ```text
 credentials\client_secret.json
+```
+
+Se o Windows esconder extensões, confirme que o arquivo não ficou como:
+
+```text
+client_secret.json.json
 ```
 
 Na primeira conexão, o navegador será aberto para login e autorização. Depois disso, o token local será salvo em:
@@ -103,9 +126,11 @@ Ou diretamente pelo Python:
 5. Ajuste as exceções, se necessário.
 6. Confirme a limpeza para mover os e-mails liberados para a lixeira.
 
-## Segurança
+## Segurança E Privacidade
 
 O Gmail Cleaner usa o fluxo oficial de autenticação do Google e solicita escopo de modificação do Gmail para conseguir mover mensagens para a lixeira.
+
+O aplicativo não solicita nem armazena senha do Gmail. A autenticação acontece pelo fluxo OAuth do Google.
 
 O app não exclui e-mails permanentemente. As mensagens limpas são movidas para a lixeira do Gmail, onde ainda podem ser recuperadas antes da exclusão definitiva feita pelo próprio Gmail.
 
@@ -118,6 +143,45 @@ src\data\
 ```
 
 Esses caminhos já estão protegidos pelo `.gitignore`.
+
+## Status Do Projeto
+
+Projeto em evolução, usado para portfólio, estudo e testes controlados.
+
+Antes de usar em uma conta principal, revise as permissões, confira a pré-visualização dos e-mails e valide as regras de proteção.
+
+## Testes
+
+A suíte de testes cobre serviços de limpeza, regras de exceção, leitura de e-mails e funções auxiliares.
+
+Execute:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+Os testes usam objetos simulados para a API do Gmail, então não exigem login, credenciais OAuth ou acesso a uma conta real.
+
+Última verificação local:
+
+```text
+15 testes passando.
+```
+
+## Uso Como Serviço
+
+Este projeto pode ser usado como base para um serviço assistido de organização de Gmail para profissionais, escolas e pequenos negócios.
+
+Exemplo de serviço:
+
+```text
+diagnóstico da caixa de entrada
+identificação dos remetentes mais volumosos
+prévia dos e-mails que podem ser limpos
+configuração de exceções
+movimentação segura para a lixeira
+relatório final da limpeza
+```
 
 ## Estrutura Do Projeto
 
