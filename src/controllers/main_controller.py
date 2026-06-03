@@ -410,6 +410,10 @@ class MainController(QObject):
             if email.message_id not in set(self.cleanable_message_ids)
         ]
         self.cleanable_message_ids = []
+        
+        # Atualizar o total de emails após a limpeza
+        self.total_messages -= moved_count
+        
         if self.ranking_mode:
             self._remove_current_sender_from_ranking()
         else:
