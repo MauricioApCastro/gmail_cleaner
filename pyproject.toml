@@ -1,0 +1,31 @@
+[project]
+name = "gmail-cleaner"
+version = "1.0.0"
+description = "Encontra os remetentes que mais ocupam espaço no Gmail e move e-mails para a lixeira com segurança"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Maurício Castro", email = "contato@mactecnology.com.br" }]
+dependencies = [
+    "PyQt6>=6.6",
+    "google-api-python-client>=2.100",
+    "google-auth>=2.20",
+    "google-auth-httplib2>=0.2",
+    "google-auth-oauthlib>=1.0",
+]
+
+[project.urls]
+Homepage = "https://mactecnology.com.br"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["*.spec", "build", "dist"]
+
+[tool.ruff.lint]
+# E/W: estilo PEP 8 · F: erros reais (pyflakes) · I: ordem de imports
+# B: armadilhas comuns (bugbear) · UP: sintaxe moderna
+select = ["E", "W", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

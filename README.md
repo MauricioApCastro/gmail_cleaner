@@ -1,5 +1,12 @@
 # Gmail Cleaner
 
+[![CI](https://github.com/MauricioApCastro/gmail_cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/MauricioApCastro/gmail_cleaner/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![PyQt6](https://img.shields.io/badge/GUI-PyQt6-41cd52)
+![Gmail API](https://img.shields.io/badge/Gmail-API-ea4335)
+
+Um projeto [MAC Tecnology](https://mactecnology.com.br).
+
 Gmail Cleaner é um aplicativo desktop em Python/PyQt6 para ajudar a encontrar os maiores consumidores de espaço no Gmail, ordenar os remetentes do maior para o menor e mover e-mails selecionados para a lixeira com regras de proteção.
 
 O foco do projeto é **limpeza com controle**: antes de mover qualquer mensagem, o app analisa anexos, e-mails recentes, marcadores de importância/estrela e exceções configuradas pelo usuário.
@@ -53,7 +60,7 @@ O Gmail Cleaner ajuda a identificar os remetentes que mais consomem espaço ou a
 - PyQt6
 - Gmail API
 - Google OAuth 2.0
-- unittest
+- ruff (qualidade e formatação de código)
 
 ## Requisitos
 
@@ -145,6 +152,8 @@ src\data\
 
 Esses caminhos já estão protegidos pelo `.gitignore`.
 
+Política de privacidade: [mactecnology.com.br/privacidade.html](https://mactecnology.com.br/privacidade.html).
+
 ## Status Do Projeto
 
 Projeto em evolução, usado para portfólio, estudo e testes controlados.
@@ -210,3 +219,17 @@ MacTecnology
 ## Licença
 
 Projeto para estudo, portfólio e evolução contínua.
+
+## Desenvolvimento
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+ruff check .          # análise de código
+ruff format .         # formatação automática
+```
+
+O GitHub Actions roda essas verificações a cada envio para a branch `main`.
+
+## Autor
+
+**Maurício Castro** · [MAC Tecnology](https://mactecnology.com.br) · contato@mactecnology.com.br

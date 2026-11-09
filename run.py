@@ -64,9 +64,7 @@ def _set_windows_app_id() -> None:
     try:
         import ctypes
 
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-            "MacTecnology.GmailCleaner"
-        )
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("MacTecnology.GmailCleaner")
     except Exception:
         pass
 
@@ -153,11 +151,11 @@ def _create_splash_screen(
 
 
 def run_trash_sender_test() -> None:
+    from src.auth.oauth import get_gmail_service
     from src.services.cleanup_service import (
         buscar_emails_por_remetente,
         mover_emails_para_lixeira,
     )
-    from src.auth.oauth import get_gmail_service
 
     remetente = input("Remetente para buscar: ").strip()
     if not remetente:

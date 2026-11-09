@@ -7,8 +7,6 @@ from PyQt6.QtWidgets import QApplication
 
 from src.auth.oauth import get_gmail_service
 from src.auth.token_manager import remove_local_token
-from src.services.history_service import write_cleanup_log
-from src.services.exception_rules import apply_exception_rules
 from src.services.cleanup_service import (
     EmailAnalysis,
     buscar_emails_por_remetente,
@@ -16,10 +14,12 @@ from src.services.cleanup_service import (
     listar_remetentes_por_volume,
     mover_emails_para_lixeira,
 )
+from src.services.exception_rules import apply_exception_rules
 from src.services.gmail_service import (
     pegar_email_logado,
     quantidade_total,
 )
+from src.services.history_service import write_cleanup_log
 
 
 class AnalysisCancelled(Exception):
@@ -220,9 +220,7 @@ class MainController(QObject):
             return
 
         if self.gmail_service is None:
-            self.window.set_status(
-                "Conecte ao Gmail antes de buscar o ranking.", "offline"
-            )
+            self.window.set_status("Conecte ao Gmail antes de buscar o ranking.", "offline")
             return
 
         self.window.set_sender("")
@@ -244,9 +242,7 @@ class MainController(QObject):
         )
 
         if not self.sender_ranking:
-            self.window.set_status(
-                "Carregando remetentes com mais e-mails...", "searching"
-            )
+            self.window.set_status("Carregando remetentes com mais e-mails...", "searching")
             self.ranking_running = True
             self.cancel_ranking_requested = False
             self.window.show_loading(True)
@@ -362,9 +358,7 @@ class MainController(QObject):
             self.window.set_status("Operacao cancelada.", "idle")
             return
 
-        self.window.set_status(
-            "Movendo e-mails selecionados para a lixeira...", "searching"
-        )
+        self.window.set_status("Movendo e-mails selecionados para a lixeira...", "searching")
         self.window.show_loading(True)
         self.window.set_buttons_enabled(
             connect=False,
@@ -410,10 +404,10 @@ class MainController(QObject):
             if email.message_id not in set(self.cleanable_message_ids)
         ]
         self.cleanable_message_ids = []
-        
+
         # Atualizar o total de emails após a limpeza
         self.total_messages -= moved_count
-        
+
         if self.ranking_mode:
             self._remove_current_sender_from_ranking()
         else:
@@ -522,9 +516,7 @@ class MainController(QObject):
     def _apply_exceptions_and_render(self, remetente: str) -> None:
         settings = self.window.get_exception_settings()
         protections = apply_exception_rules(self.current_emails, settings)
-        protection_by_id = {
-            protection.message_id: protection for protection in protections
-        }
+        protection_by_id = {protection.message_id: protection for protection in protections}
 
         cleanable = []
         protected_rows = []
@@ -566,7 +558,9 @@ class MainController(QObject):
         )
 
     def _connect_exception_controls(self) -> None:
-        refresh = lambda *_: self._refresh_current_analysis()
+        def refresh(*_) -> None:
+            self._refresh_current_analysis()
+
         self.window.protect_attachments_check.toggled.connect(refresh)
         self.window.protect_recent_check.toggled.connect(refresh)
         self.window.protect_important_check.toggled.connect(refresh)
@@ -615,13 +609,9 @@ class MainController(QObject):
         if total == 0:
             self.window.set_status("Nenhum e-mail encontrado para ler.", "searching")
         elif current == 0:
-            self.window.set_status(
-                f"Preparando analise de {total} e-mail(s)...", "searching"
-            )
+            self.window.set_status(f"Preparando analise de {total} e-mail(s)...", "searching")
         else:
-            self.window.set_status(
-                f"Analisando e-mail {current} de {total}...", "searching"
-            )
+            self.window.set_status(f"Analisando e-mail {current} de {total}...", "searching")
         self.window.show_progress(current, total)
         QApplication.processEvents()
         if self.cancel_analysis_requested:
@@ -632,17 +622,11 @@ class MainController(QObject):
             raise RankingCancelled
 
         if total == 0:
-            self.window.set_status(
-                "Nenhum e-mail encontrado para ranquear.", "searching"
-            )
+            self.window.set_status("Nenhum e-mail encontrado para ranquear.", "searching")
         elif current == 0:
-            self.window.set_status(
-                f"Preparando resumo de {total} e-mail(s)...", "searching"
-            )
+            self.window.set_status(f"Preparando resumo de {total} e-mail(s)...", "searching")
         else:
-            self.window.set_status(
-                f"Analisando remetente {current} de {total}...", "searching"
-            )
+            self.window.set_status(f"Analisando remetente {current} de {total}...", "searching")
         self.window.show_progress(current, total)
         QApplication.processEvents()
         if self.cancel_ranking_requested:
@@ -650,13 +634,9 @@ class MainController(QObject):
 
     def _update_trash_progress(self, current: int, total: int) -> None:
         if current == 0:
-            self.window.set_status(
-                f"Preparando limpeza de {total} e-mail(s)...", "searching"
-            )
+            self.window.set_status(f"Preparando limpeza de {total} e-mail(s)...", "searching")
         else:
-            self.window.set_status(
-                f"Limpando e-mail {current} de {total}...", "searching"
-            )
+            self.window.set_status(f"Limpando e-mail {current} de {total}...", "searching")
         self.window.show_progress(current, total)
         QApplication.processEvents()
 
@@ -674,9 +654,7 @@ def _summary(
         "cleanable": len(cleanable),
         "protected": protected_count,
         "unique_senders": unique_senders,
-        "estimated_space": _format_size(
-            sum(email.size_estimate for email in cleanable)
-        ),
+        "estimated_space": _format_size(sum(email.size_estimate for email in cleanable)),
     }
 
 
@@ -694,9 +672,7 @@ def _result_rows(
     with_attachment = sum(1 for email in all_emails if email.has_attachment)
     status = "Seguro apagar"
     if protected_count and cleanable_count:
-        status = (
-            "Atencao: possui anexos" if with_attachment else "Selecionado para limpeza"
-        )
+        status = "Atencao: possui anexos" if with_attachment else "Selecionado para limpeza"
     elif protected_count and not cleanable_count:
         status = "Protegido"
     elif cleanable_count:
@@ -709,9 +685,7 @@ def _result_rows(
             "total": len(all_emails),
             "cleanable_count": cleanable_count,
             "protected_count": protected_count,
-            "estimated_space": _format_size(
-                sum(email.size_estimate for email in cleanable)
-            ),
+            "estimated_space": _format_size(sum(email.size_estimate for email in cleanable)),
             "status": status,
         }
     ]
@@ -728,7 +702,9 @@ def _protected_row(email: EmailAnalysis, reason: str) -> dict[str, object]:
     }
 
 
-def _email_rows(emails: list[EmailAnalysis], protection_by_id: dict[str, object]) -> list[dict[str, object]]:
+def _email_rows(
+    emails: list[EmailAnalysis], protection_by_id: dict[str, object]
+) -> list[dict[str, object]]:
     rows = []
     for email in emails:
         protection = protection_by_id[email.message_id]

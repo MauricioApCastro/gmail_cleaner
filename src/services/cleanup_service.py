@@ -1,18 +1,18 @@
 from __future__ import annotations
 
+from base64 import urlsafe_b64decode
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parseaddr
-from base64 import urlsafe_b64decode
 
 ProgressCallback = Callable[[int, int], None]
 
 
 @dataclass(frozen=True)
 class ResultadoBuscaRemetente:
-    emails: list["EmailAnalysis"]
+    emails: list[EmailAnalysis]
 
     @property
     def total(self) -> int:
@@ -182,12 +182,7 @@ def definir_email_importante(service, message_id: str, important: bool) -> None:
 
 
 def _analisar_email(service, message_id: str) -> EmailAnalysis:
-    message = (
-        service.users()
-        .messages()
-        .get(userId="me", id=message_id, format="full")
-        .execute()
-    )
+    message = service.users().messages().get(userId="me", id=message_id, format="full").execute()
     headers = _headers_to_dict(message.get("payload", {}).get("headers", []))
     sender = headers.get("From", "(sem remetente)")
     payload = message.get("payload", {})
@@ -216,9 +211,7 @@ def _extrair_header(message: dict, header_name: str) -> str:
 
 def _headers_to_dict(headers: list[dict[str, str]]) -> dict[str, str]:
     return {
-        header.get("name", ""): header.get("value", "")
-        for header in headers
-        if header.get("name")
+        header.get("name", ""): header.get("value", "") for header in headers if header.get("name")
     }
 
 
@@ -252,9 +245,7 @@ def _extrair_corpo_texto(payload: dict) -> str:
             return ""
 
     return " ".join(
-        text
-        for text in (_extrair_corpo_texto(part) for part in payload.get("parts", []))
-        if text
+        text for text in (_extrair_corpo_texto(part) for part in payload.get("parts", [])) if text
     )
 
 

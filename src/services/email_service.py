@@ -63,9 +63,7 @@ def list_email_previews(
 
 def _headers_to_dict(headers: list[dict[str, str]]) -> dict[str, str]:
     return {
-        header.get("name", ""): header.get("value", "")
-        for header in headers
-        if header.get("name")
+        header.get("name", ""): header.get("value", "") for header in headers if header.get("name")
     }
 
 

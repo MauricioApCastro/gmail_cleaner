@@ -6,7 +6,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from src.config.settings import CLIENT_SECRET_FILE, GMAIL_SCOPES, TOKEN_FILE
-from src.auth.token_manager import remove_local_token
 
 
 def get_gmail_credentials() -> Credentials:
@@ -39,12 +38,8 @@ def get_gmail_credentials() -> Credentials:
         )
         credentials = flow.run_local_server(
             port=0,
-            authorization_prompt_message=(
-                "Abra este link para fazer login no Gmail:\n{url}\n"
-            ),
-            success_message=(
-                "Login concluido. Pode fechar esta aba e voltar ao terminal."
-            ),
+            authorization_prompt_message=("Abra este link para fazer login no Gmail:\n{url}\n"),
+            success_message=("Login concluido. Pode fechar esta aba e voltar ao terminal."),
         )
 
     TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)

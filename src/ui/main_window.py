@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
-    QMessageBox,
     QProgressBar,
     QPushButton,
     QSizePolicy,
@@ -111,9 +110,7 @@ class MainWindow(QMainWindow):
 
         self.total_messages_card = SummaryMetric("✉", "0", "Total de emails", "blue")
         self.safe_card = SummaryMetric("✉", "0", "Podem ser removidos", "green")
-        self.estimated_space_card = SummaryMetric(
-            "▱", "0 B", "Espaço recuperável", "orange"
-        )
+        self.estimated_space_card = SummaryMetric("▱", "0 B", "Espaço recuperável", "orange")
         self.protected_card = SummaryMetric("♢", "0", "Protegidos", "purple")
 
         self.found_card = SummaryMetric("✉", "0", "E-mails encontrados", "blue")
@@ -165,9 +162,7 @@ class MainWindow(QMainWindow):
         self.recent_days_input.setValue(30)
         self.recent_days_input.setFixedWidth(92)
         self.protected_senders_input = QLineEdit()
-        self.protected_senders_input.setPlaceholderText(
-            "remetente@dominio.com, outro@dominio.com"
-        )
+        self.protected_senders_input.setPlaceholderText("remetente@dominio.com, outro@dominio.com")
         self.protected_domains_input = QLineEdit()
         self.protected_domains_input.setPlaceholderText("@empresa.com, @cliente.com")
         self.subject_keywords_input = QLineEdit()
@@ -427,12 +422,8 @@ class MainWindow(QMainWindow):
 
     def set_search_running(self, running: bool, stopping: bool = False) -> None:
         if running:
-            self.search_button.setText(
-                "Cancelando..." if stopping else "Cancelar análise"
-            )
-            self.search_button.setObjectName(
-                "dangerButton" if stopping else "heroButton"
-            )
+            self.search_button.setText("Cancelando..." if stopping else "Cancelar análise")
+            self.search_button.setObjectName("dangerButton" if stopping else "heroButton")
             self.search_button.setEnabled(not stopping)
         else:
             self.search_button.setText("🔍  Analisar")
@@ -442,12 +433,8 @@ class MainWindow(QMainWindow):
 
     def set_ranking_running(self, running: bool, stopping: bool = False) -> None:
         if running:
-            self.rank_button.setText(
-                "Cancelando..." if stopping else "Cancelar ranking"
-            )
-            self.rank_button.setObjectName(
-                "dangerButton" if stopping else "secondaryButton"
-            )
+            self.rank_button.setText("Cancelando..." if stopping else "Cancelar ranking")
+            self.rank_button.setObjectName("dangerButton" if stopping else "secondaryButton")
             self.rank_button.setEnabled(not stopping)
         else:
             self.rank_button.setText("Ranking por volume")
@@ -503,9 +490,7 @@ class MainWindow(QMainWindow):
             body_keywords=_split_values(self.body_keywords_input.text()),
             protect_attachments=self.protect_attachments_check.isChecked(),
             protect_recent_days=(
-                self.recent_days_input.value()
-                if self.protect_recent_check.isChecked()
-                else 0
+                self.recent_days_input.value() if self.protect_recent_check.isChecked() else 0
             ),
             protect_starred_or_important=self.protect_important_check.isChecked(),
         )
@@ -537,12 +522,8 @@ class MainWindow(QMainWindow):
         for row_index, row in enumerate(rows):
             selected = bool(row.get("selected", False))
             status = str(row.get("status", ""))
-            self.result_table.setCellWidget(
-                row_index, 0, _selection_indicator(selected)
-            )
-            self.result_table.setItem(
-                row_index, 1, QTableWidgetItem(str(row["sender"]))
-            )
+            self.result_table.setCellWidget(row_index, 0, _selection_indicator(selected))
+            self.result_table.setItem(row_index, 1, QTableWidgetItem(str(row["sender"])))
             self.result_table.setItem(row_index, 2, QTableWidgetItem(str(row["total"])))
             self.result_table.setItem(
                 row_index,
@@ -572,9 +553,7 @@ class MainWindow(QMainWindow):
 
     def _refresh_email_reason_filter(self, rows: list[dict[str, object]]) -> None:
         current_filter = self.email_reason_filter.currentText()
-        reasons = sorted(
-            {str(row.get("reason", "")) for row in rows if row.get("reason")}
-        )
+        reasons = sorted({str(row.get("reason", "")) for row in rows if row.get("reason")})
 
         self.email_reason_filter.blockSignals(True)
         self.email_reason_filter.clear()
@@ -610,9 +589,7 @@ class MainWindow(QMainWindow):
         self.email_table.setRowCount(len(rows))
         for row_index, row in enumerate(rows):
             self.email_table.setItem(row_index, 0, QTableWidgetItem(str(row["sender"])))
-            self.email_table.setItem(
-                row_index, 1, QTableWidgetItem(str(row["subject"]))
-            )
+            self.email_table.setItem(row_index, 1, QTableWidgetItem(str(row["subject"])))
             self.email_table.setItem(row_index, 2, QTableWidgetItem(str(row["reason"])))
             self.email_table.setItem(row_index, 3, QTableWidgetItem(str(row["date"])))
             self.email_table.setItem(row_index, 4, QTableWidgetItem(str(row["size"])))
@@ -681,12 +658,10 @@ class MainWindow(QMainWindow):
         icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         message = QLabel(
-            (
-                f"{quantidade} e-mail(s) serão movidos para a lixeira.\n\n"
-                f"{protegidos} e-mail(s) foram protegidos por regras de exceção.\n\n"
-                "E-mails protegidos serão preservados e nenhum e-mail será "
-                "excluído permanentemente."
-            )
+            f"{quantidade} e-mail(s) serão movidos para a lixeira.\n\n"
+            f"{protegidos} e-mail(s) foram protegidos por regras de exceção.\n\n"
+            "E-mails protegidos serão preservados e nenhum e-mail será "
+            "excluído permanentemente."
         )
         message.setObjectName("warningDialogText")
         message.setWordWrap(True)
@@ -742,15 +717,13 @@ class Header(QFrame):
                 )
 
         title = QLabel(
-            '<span style="color:#071A3D">Gmail</span> '
-            '<span style="color:#1677FF">Cleaner</span>'
+            '<span style="color:#071A3D">Gmail</span> <span style="color:#1677FF">Cleaner</span>'
         )
         title.setObjectName("brandTitle")
         slogan = QLabel("ORGANIZE. PROTEJA. LIMPE COM\nSEGURANÇA.")
         slogan.setObjectName("brandSlogan")
         byline = QLabel(
-            'by&nbsp;&nbsp;<span style="color:#1677FF;font-weight:800">'
-            "MacTecnology</span>"
+            'by&nbsp;&nbsp;<span style="color:#1677FF;font-weight:800">MacTecnology</span>'
         )
         byline.setObjectName("brandByline")
 
@@ -795,9 +768,7 @@ class NavigationTabs(QFrame):
             button = QPushButton(f"{icons[index]}  {label}")
             button.setObjectName("tabActive" if index == 0 else "tabButton")
             button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-            button.clicked.connect(
-                lambda _checked=False, page=index: self.tab_changed.emit(page)
-            )
+            button.clicked.connect(lambda _checked=False, page=index: self.tab_changed.emit(page))
             button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.buttons.append(button)
             layout.addWidget(button)
@@ -1133,11 +1104,7 @@ def _form_label(text: str) -> QLabel:
 
 
 def _split_values(value: str) -> set[str]:
-    return {
-        part.strip().lower()
-        for part in value.replace("\n", ",").split(",")
-        if part.strip()
-    }
+    return {part.strip().lower() for part in value.replace("\n", ",").split(",") if part.strip()}
 
 
 def _window_settings() -> QSettings:

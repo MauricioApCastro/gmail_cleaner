@@ -22,9 +22,7 @@ class EmailProtection:
     reason: str = ""
 
 
-def apply_exception_rules(
-    emails: list, settings: ExceptionSettings
-) -> list[EmailProtection]:
+def apply_exception_rules(emails: list, settings: ExceptionSettings) -> list[EmailProtection]:
     return [get_protection(email, settings) for email in emails]
 
 
@@ -59,8 +57,7 @@ def _first_protection_reason(email, settings: ExceptionSettings) -> str:
         return "Remetente protegido"
 
     protected_domains = {
-        domain if domain.startswith("@") else f"@{domain}"
-        for domain in settings.protected_domains
+        domain if domain.startswith("@") else f"@{domain}" for domain in settings.protected_domains
     }
     if sender_domain and sender_domain in protected_domains:
         return "Dominio protegido"
@@ -74,9 +71,7 @@ def _first_protection_reason(email, settings: ExceptionSettings) -> str:
     if _is_recent(getattr(email, "received_at", None), settings.protect_recent_days):
         return "E-mail recente"
 
-    if settings.protect_starred_or_important and (
-        "starred" in labels or "important" in labels
-    ):
+    if settings.protect_starred_or_important and ("starred" in labels or "important" in labels):
         return "Marcado como importante/estrela"
 
     return ""
